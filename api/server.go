@@ -9,6 +9,7 @@ import (
   "eventStructure"
   "strings"
   "strconv"
+  "google.golang.org/api/iterator"
   //"net/url"
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
@@ -62,9 +63,22 @@ func main() {
             }
           }
 
+          iter := client.Collection("users").Documents(ctx)
+          for {
+                  doc, err := iter.Next()
+                  if err == iterator.Done {
+                    break
+                  }
+                  if err != nil {
+                    log.Fatalf("Error reading data %v", err) 
+                  }
+                  fmt.Println(doc.Data())
+          }
+
           fmt.Println(from)
           fmt.Println(to)
           fmt.Println(searchedEvent)
+          //send Json
 
         } else if r.Method == "POST"{
             var newEvent eventStructure.Event
