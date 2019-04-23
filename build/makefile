@@ -8,4 +8,4 @@ all:
 	go run ../pkg/main/server.go ${port} ${path}
 	#export GOBIN=/home/luppolo/skuska
 	#go install ../pkg/main/server.go
-	#sudo docker  docker run -v /home/luppolo/skuska:/server -v ${path}:/credentials -d  ubuntu /server ${port} credentials
+	#sudo docker  docker run -v /home/luppolo/skuska:/server -v ${path}:/credentials --detach  ubuntu /server ${port} credentials

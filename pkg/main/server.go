@@ -3,6 +3,7 @@ package main
 
 import (
   "fmt"
+  "encoding/json"
   "log"
   "net/http"
   "decode"
@@ -17,6 +18,11 @@ import (
   //"firebase.google.com/go/auth"
   "google.golang.org/api/option"
 )
+
+type Answer struct {
+  Count int64
+  Type string
+}
 
 func main() {
 
@@ -75,6 +81,7 @@ func main() {
           for {
                 doc, err := iter.Next()
                 if err == iterator.Done {
+                  fmt.Println("iterator done")
                         break
                 }
                 if err != nil {
@@ -90,10 +97,23 @@ func main() {
 
           fmt.Println(count)
           //send Json
+          answ := Answer{count, searchedEvent}
+          var answJson,err = json.Marshal(answ)
+          if err != nil {
+            log.Fatalf("Nepodarilo sa vytvorit Json")
+          }
+          w.Header().Set("Content-type", "application/json")
+          w.WriteHeader(http.StatusOK)
+          w.Write(answJson)
+
 
         } else if r.Method == "POST"{
             var newEvent eventStructure.Event
             newEvent = decode.Decode(r)
+
+            if newEvent.Type == ""{
+              log.Fatalf("Hod err zle poslane parametre")
+            }
 
             if newEvent.Timestamp > maxTime {
               maxTime = newEvent.Timestamp
