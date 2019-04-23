@@ -11,13 +11,11 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-pkg/
-
-server
-serviceAccountKey.json
-src/cloud.google.com
-src/firebase.google.com
-src/github.com
-src/go.opencensus.io
-src/golang.org
-src/google.golang.org
+pkg/linux_amd64/
+pkg/serviceAccountKey.json
+pkg/src/cloud.google.com
+pkg/src/firebase.google.com
+pkg/src/github.com
+pkg/src/go.opencensus.io
+pkg/src/golang.org
+pkg/src/google.golang.org
