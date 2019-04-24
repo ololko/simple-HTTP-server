@@ -2,7 +2,7 @@ package eventStructure
 
 
 type Event struct {
-  Count int
+  Count int64
   Type string
-  Timestamp int
+  Timestamp int64
 }
