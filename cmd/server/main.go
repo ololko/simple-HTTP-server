@@ -9,7 +9,7 @@ import (
   "log"
   "net/http"
   "decode"
-  "buffers"
+  "eventStructure"
   "strings"
   "math"
   "strconv"
@@ -20,10 +20,10 @@ import (
   "google.golang.org/api/option"
 )
 
-/*type AnswerStruct struct {
+type AnswerStruct struct {
   Count int64
   Type string
-}*/
+}
 type Limit struct {
   minTime int64
   maxTime int64
@@ -114,10 +114,7 @@ func main() {
               }
         }
 
-        answ := buffers.AnswerStruct{
-          Count: count,
-          Type: searchedEvent,
-        }
+        answ := AnswerStruct{count, searchedEvent}
         var answJson,err = json.Marshal(answ)
         if err != nil {
           w.WriteHeader(500)
@@ -130,7 +127,7 @@ func main() {
 
         
         } else if r.Method == "POST"{
-            var newEvent buffers.Event
+            var newEvent eventStructure.Event
             newEvent = decode.Decode(r)
 
             if newEvent.Type == ""{
@@ -145,13 +142,11 @@ func main() {
               limit.minTime = newEvent.Timestamp
             }
 
-            toSave := buffers.Event{
-              Count     : newEvent.Count,
-              Type      : newEvent.Type,
-              Timestamp : newEvent.Timestamp,
-            }
-
-            var DocRef ,_, err = client.Collection("users").Add(ctx, toSave)
+            var DocRef ,_, err = client.Collection("users").Add(ctx, map[string]interface{}{
+                "Count"     : newEvent.Count,
+                "Type"      : newEvent.Type,
+                "Timestamp" : newEvent.Timestamp,
+            })
             if err != nil {
                 w.WriteHeader(502)
                 return

@@ -2,13 +2,13 @@ package decode
 
 import (
 	"encoding/json"
-	"buffers"
+	"eventStructure"
     "net/http"
 )
 
-func Decode(req *http.Request) buffers.Event {
+func Decode(req *http.Request) eventStructure.Event {
     decoder := json.NewDecoder(req.Body)
-    var t buffers.Event
+    var t eventStructure.Event
     err := decoder.Decode(&t)
     if err != nil {
     	t.Timestamp = 0
