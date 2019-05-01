@@ -57,8 +57,8 @@ func main() {
 
 //      SERVER SIDE
     var limit Limit
-    limit.maxTime = math.MinInt64
-    limit.minTime = math.MaxInt64
+    limit.maxTime = math.MaxInt64
+    limit.minTime = math.MinInt64
 
     http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
       if r.Method == "GET"{
