@@ -4,7 +4,6 @@ import(
   "encoding/json"
   "fmt"
   "log"
-  "math"
   "net/http"
   "strings"
   "github.com/ololko/simple-http-server/pkg/answerStructure"
@@ -12,22 +11,6 @@ import(
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
 )
-
-  var(
-    from int64
-    to int64
-    count int64
-    searchedEvent string
-    )
-
-func init(){
-  from = 0
-  to = 0
-  count = 0
-  searchedEvent = ""
-  from = math.MinInt64
-  to = math.MaxInt64
-}
 
 func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
 
@@ -39,16 +22,13 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
 
   var requestLine = strings.Split(r.URL.RawQuery,"&")  
 
-  from = math.MinInt64
-  to = math.MaxInt64
-  searchedEvent = ""
-  
   request,err := parseRequest(requestLine)
   if err != nil{
     w.WriteHeader(400)
     return
   }
 
+  var count int64
   count = 0
   iter := client.Collection("users").Where("Type", "==", request.searchedEvent).Where("Timestamp", ">=", request.from).Where("Timestamp", "<=", request.to).Documents(context.Background())
   for {

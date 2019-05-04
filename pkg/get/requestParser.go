@@ -4,12 +4,13 @@ import(
 	"strconv"
 	"strings"
 	"errors"
+	"math"
 )
 
 func parseRequest(requestLine []string) (requestT, error) {
 	request := requestT {
-		0,
-		0,
+		math.MinInt64,
+  		math.MaxInt64,
 		"",
 	}
 	for i := 0; i < len(requestLine); i++ {
