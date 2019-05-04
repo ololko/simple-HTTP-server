@@ -4,7 +4,6 @@ import (
   "github.com/ololko/simple-http-server/pkg/decode"
   "github.com/ololko/simple-http-server/pkg/eventStructure" 
   "github.com/ololko/simple-http-server/pkg/handleGet"
-  "github.com/ololko/simple-http-server/pkg/limit"
   "log"
   "net/http"
   "os"

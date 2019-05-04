@@ -9,7 +9,6 @@ import(
   "strconv"
   "strings"
   "github.com/ololko/simple-http-server/pkg/answerStructure"
-  "github.com/ololko/simple-http-server/pkg/limit"
   "google.golang.org/api/iterator" 
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
