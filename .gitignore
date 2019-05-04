@@ -11,18 +11,4 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-pkg/linux_amd64/
-src/cloud.google.com
-src/firebase.google.com
-src/github.com
-src/go.opencensus.io
-src/golang.org
-src/google.golang.org
-
-pkg/cloud.google.com
-pkg/firebase.google.com
-pkg/github.com
-pkg/go.opencensus.io
-pkg/golang.org
-pkg/google.golang.org
-
+go.sum

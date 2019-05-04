@@ -1,20 +1,17 @@
 package main
 
-//fmt.Println(reflect.TypeOf(tst))
-
 import (
-  "fmt"
-  "reflect"
+  "github.com/ololko/simple-http-server/pkg/decode"
+  "github.com/ololko/simple-http-server/pkg/eventStructure" 
   "encoding/json"
+  "fmt"
   "log"
   "net/http"
-  "decode"
-  "eventStructure"
-  "strings"
+  "os"
   "math"
   "strconv"
-  "google.golang.org/api/iterator"
-  "os"
+  "strings"
+  "google.golang.org/api/iterator" 
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
   "google.golang.org/api/option"
@@ -29,42 +26,16 @@ type Limit struct {
   maxTime int64
 }
 
-/*func handleGET(w http.ResponseWriter, r *http.Request, client firestore.Client ,limit Limit){
+func handleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit Limit){
   
-  
-}*/
+  client, err := app.Firestore(context.Background())
+            if err != nil {
+                log.Fatalln(err)
+            }
+            defer client.Close()
 
 
-
-func main() {
-
-    port := ":" + os.Args[1]
-    path := os.Args[2]
-
-    opt := option.WithCredentialsFile(path)
-    ctx := context.Background()
-    app, err := firebase.NewApp(ctx, nil, opt)
-    if err != nil {
-      log.Fatalln(err)
-    }
-
-    client, err := app.Firestore(ctx)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    defer client.Close()
-    fmt.Println(reflect.TypeOf(client))
-
-//      SERVER SIDE
-    var limit Limit
-    limit.maxTime = math.MaxInt64
-    limit.minTime = math.MinInt64
-
-    http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
-      if r.Method == "GET"{
-        //handleGET(w, r, client, limit)
-
-        var querries = strings.Split(r.URL.RawQuery,"&")  
+  var querries = strings.Split(r.URL.RawQuery,"&")  
 
         from := limit.minTime
         to := limit.maxTime
@@ -115,8 +86,8 @@ func main() {
         }
 
         answ := AnswerStruct{count, searchedEvent}
-        var answJson,err = json.Marshal(answ)
-        if err != nil {
+        var answJson,error = json.Marshal(answ)
+        if error != nil {
           w.WriteHeader(500)
           return
         }
@@ -124,9 +95,40 @@ func main() {
         w.Header().Set("Content-type", "application/json")
         w.WriteHeader(200)
         w.Write(answJson)
+  
+}
 
+
+
+func main() {
+
+    port := ":" + os.Args[1]
+    path := os.Args[2]
+
+    opt := option.WithCredentialsFile(path)
+    ctx := context.Background()
+    app, err := firebase.NewApp(ctx, nil, opt)
+    if err != nil {
+      log.Fatalln(err)
+    }
+
+//      SERVER SIDE
+    var limit Limit
+    limit.maxTime = math.MaxInt64
+    limit.minTime = math.MinInt64
+
+    http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
+      if r.Method == "GET"{
+        handleGET(w, r, app, limit)
         
         } else if r.Method == "POST"{
+
+            client, err := app.Firestore(ctx)
+            if err != nil {
+                log.Fatalln(err)
+            }
+            defer client.Close()
+
             var newEvent eventStructure.Event
             newEvent = decode.Decode(r)
 
@@ -142,12 +144,12 @@ func main() {
               limit.minTime = newEvent.Timestamp
             }
 
-            var DocRef ,_, err = client.Collection("users").Add(ctx, map[string]interface{}{
+            var DocRef ,_, error = client.Collection("users").Add(ctx, map[string]interface{}{
                 "Count"     : newEvent.Count,
                 "Type"      : newEvent.Type,
                 "Timestamp" : newEvent.Timestamp,
             })
-            if err != nil {
+            if error != nil {
                 w.WriteHeader(502)
                 return
             }

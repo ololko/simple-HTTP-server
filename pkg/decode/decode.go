@@ -2,7 +2,7 @@ package decode
 
 import (
 	"encoding/json"
-	"eventStructure"
+	"github.com/ololko/simple-http-server/pkg/eventStructure"
     "net/http"
 )
 
