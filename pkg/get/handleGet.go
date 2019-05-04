@@ -6,7 +6,6 @@ import(
   "log"
   "net/http"
   "strings"
-  "github.com/ololko/simple-http-server/pkg/answerStructure"
   "google.golang.org/api/iterator" 
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
@@ -50,7 +49,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
         }
   }
 
-  answ := answerStruct.AnswerStruct{count, request.searchedEvent}
+  answ := answerT{count, request.searchedEvent}
   var answJson,error = json.Marshal(answ)
   if error != nil {
     w.WriteHeader(500)
@@ -59,6 +58,5 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
 
   w.Header().Set("Content-type", "application/json")
   w.WriteHeader(200)
-  w.Write(answJson)
-  
+  w.Write(answJson) 
 }
