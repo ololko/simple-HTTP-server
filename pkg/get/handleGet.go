@@ -3,7 +3,6 @@ package get
 import(
   "encoding/json"
   "fmt"
-  "log"
   "net/http"
   "strings"
   "google.golang.org/api/iterator" 

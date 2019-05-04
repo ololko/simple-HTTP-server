@@ -1,17 +1,15 @@
 package post
 
 import (
-  "log"
+  "fmt"
   "net/http"
-  "os"
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
-  "google.golang.org/api/option"
 )
 
 func HandlePost(w http.ResponseWriter, r *http.Request, app *firebase.App) {
 	
-	client, err := app.Firestore(ctx)
+	client, err := app.Firestore(context.Background())
 	if err != nil {
 		fmt.Println(err)
 	    return
@@ -26,7 +24,7 @@ func HandlePost(w http.ResponseWriter, r *http.Request, app *firebase.App) {
 		return
 	}
 
-	var DocRef ,_, error = client.Collection("users").Add(ctx, map[string]interface{}{
+	var DocRef ,_, error = client.Collection("users").Add(context.Background(), map[string]interface{}{
 	"Count"     : newEvent.Count,
 	"Type"      : newEvent.Type,
 	"Timestamp" : newEvent.Timestamp,

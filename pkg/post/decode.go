@@ -5,7 +5,7 @@ import (
     "net/http"
 )
 
-func decode(req *http.Request) eventStructure.Event {
+func decode(req *http.Request) eventT {
     decoder := json.NewDecoder(req.Body)
     var t eventT
     err := decoder.Decode(&t)
