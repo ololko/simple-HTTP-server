@@ -8,7 +8,6 @@ import (
   "log"
   "net/http"
   "os"
-  "math"
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
   "google.golang.org/api/option"
@@ -28,13 +27,10 @@ func main() {
     }
 
 //      SERVER SIDE
-    var limit limit.Limit
-    limit.MaxTime = math.MaxInt64
-    limit.MinTime = math.MinInt64
 
     http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
       if r.Method == "GET"{
-        handleGet.HandleGet(w, r, app, limit)
+        handleGet.HandleGet(w, r, app)
         
         } else if r.Method == "POST"{
 
@@ -50,13 +46,6 @@ func main() {
             if newEvent.Type == ""{
               w.WriteHeader(400)
               return
-            }
-
-            if newEvent.Timestamp > limit.maxTime {
-              limit.maxTime = newEvent.Timestamp
-            }
-            if newEvent.Timestamp < limit.minTime {
-              limit.minTime = newEvent.Timestamp
             }
 
             var DocRef ,_, error = client.Collection("users").Add(ctx, map[string]interface{}{

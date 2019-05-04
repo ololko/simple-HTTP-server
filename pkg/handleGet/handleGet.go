@@ -4,6 +4,7 @@ import(
   "encoding/json"
   "fmt"
   "log"
+  "math"
   "net/http"
   "strconv"
   "strings"
@@ -14,8 +15,8 @@ import(
   firebase "firebase.google.com/go"
 )
 
-func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit limit.Limit){
-  
+func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
+
   client, err := app.Firestore(context.Background())
             if err != nil {
                 log.Fatalln(err)
@@ -25,8 +26,8 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit 
 
   var querries = strings.Split(r.URL.RawQuery,"&")  
 
-        from := limit.MinTime
-        to := limit.MaxTime
+        from := math.MinInt64
+        to := math.MaxInt64
         var count int64
         var searchedEvent string
 
