@@ -7,13 +7,14 @@ import(
   "net/http"
   "strconv"
   "strings"
-  "answerStruct"
+  "github.com/ololko/simple-http-server/pkg/answerStructure"
+  "github.com/ololko/simple-http-server/pkg/limit"
   "google.golang.org/api/iterator" 
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
 )
 
-func handleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit Limit){
+func HandleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit limit.Limit){
   
   client, err := app.Firestore(context.Background())
             if err != nil {
@@ -24,8 +25,8 @@ func handleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit 
 
   var querries = strings.Split(r.URL.RawQuery,"&")  
 
-        from := limit.minTime
-        to := limit.maxTime
+        from := limit.MinTime
+        to := limit.MaxTime
         var count int64
         var searchedEvent string
 

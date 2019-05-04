@@ -4,24 +4,15 @@ import (
   "github.com/ololko/simple-http-server/pkg/decode"
   "github.com/ololko/simple-http-server/pkg/eventStructure" 
   "github.com/ololko/simple-http-server/pkg/handleGet"
-  "encoding/json"
-  "fmt"
+  "github.com/ololko/simple-http-server/pkg/limit"
   "log"
   "net/http"
   "os"
   "math"
-  "strconv"
-  "strings"
-  "google.golang.org/api/iterator" 
   "golang.org/x/net/context"
   firebase "firebase.google.com/go"
   "google.golang.org/api/option"
 )
-
-type Limit struct {
-  minTime int64
-  maxTime int64
-}
 
 
 func main() {
@@ -37,13 +28,13 @@ func main() {
     }
 
 //      SERVER SIDE
-    var limit Limit
-    limit.maxTime = math.MaxInt64
-    limit.minTime = math.MinInt64
+    var limit limit.Limit
+    limit.MaxTime = math.MaxInt64
+    limit.MinTime = math.MinInt64
 
     http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
       if r.Method == "GET"{
-        handleGet.handleGET(w, r, app, limit)
+        handleGet.HandleGET(w, r, app, limit)
         
         } else if r.Method == "POST"{
 
