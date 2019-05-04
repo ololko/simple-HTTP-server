@@ -14,9 +14,10 @@ import(
 func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
 
   client, err := app.Firestore(context.Background())
-            if err != nil {
-                log.Fatalln(err)
-            }
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
   defer client.Close()
 
   var requestLine = strings.Split(r.URL.RawQuery,"&")  
@@ -31,22 +32,22 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
   count = 0
   iter := client.Collection("users").Where("Type", "==", request.searchedEvent).Where("Timestamp", ">=", request.from).Where("Timestamp", "<=", request.to).Documents(context.Background())
   for {
-        doc, err := iter.Next()
-        if err == iterator.Done {
-          break
-        }
-        if err != nil {
-          fmt.Println(err)
-          w.WriteHeader(502)
-          return
-        }
+    doc, err := iter.Next()
+    if err == iterator.Done {
+      break
+    }
+    if err != nil {
+      fmt.Println(err)
+      w.WriteHeader(502)
+      return
+    }
 
-        if recData, ok := doc.Data()["Count"].(int64); ok {
-            count += recData
-        } else {
-            w.WriteHeader(500)
-            return
-        }
+    if recData, ok := doc.Data()["Count"].(int64); ok {
+        count += recData
+    } else {
+        w.WriteHeader(500)
+        return
+    }
   }
 
   answ := answerT{count, request.searchedEvent}

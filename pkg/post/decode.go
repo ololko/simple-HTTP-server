@@ -1,14 +1,13 @@
-package decode
+package post
 
 import (
 	"encoding/json"
-	"github.com/ololko/simple-http-server/pkg/eventStructure"
     "net/http"
 )
 
-func Decode(req *http.Request) eventStructure.Event {
+func decode(req *http.Request) eventStructure.Event {
     decoder := json.NewDecoder(req.Body)
-    var t eventStructure.Event
+    var t eventT
     err := decoder.Decode(&t)
     if err != nil {
     	t.Timestamp = 0
