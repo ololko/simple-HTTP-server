@@ -1,28 +1,30 @@
 package get
 
-import()
+import(
+	"strconv"
+	"strings"
+	"errors"
+)
 
-func parseRequest request() {
-	request := request {
+func parseRequest(requestLine []string) (requestT, error) {
+	request := requestT {
 		0,
 		0,
-		""
+		"",
 	}
 	for i := 0; i < len(requestLine); i++ {
 	    if strings.Contains(requestLine[i],"from="){
-	      from,err = strconv.ParseInt(requestLine[i][5:], 10, 64)
+	      from,err := strconv.ParseInt(requestLine[i][5:], 10, 64)
 	      if err != nil {
-	        w.WriteHeader(400)
-	        return
+	        return request, errors.New("Parsing error")
 	      }
 	      request.from = from
 	      continue
 	    }
 	    if strings.Contains(requestLine[i],"to="){
-	      to,err = strconv.ParseInt(requestLine[i][3:], 10, 64)
+	      to,err := strconv.ParseInt(requestLine[i][3:], 10, 64)
 	      if err != nil {
-	        w.WriteHeader(400)
-	        return
+	        return request, errors.New("Parsing error")
 	      }
 	      request.to = to
 	      continue
@@ -33,6 +35,6 @@ func parseRequest request() {
 	      continue
 	    }
   	}
-  	return request
+  	return request, nil
 }
 

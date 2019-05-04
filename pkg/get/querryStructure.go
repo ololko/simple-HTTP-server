@@ -1,6 +1,6 @@
 package get
 
-type request struct{
+type requestT struct{
 	from int64
 	to int64
 	searchedEvent string

@@ -6,7 +6,6 @@ import(
   "log"
   "math"
   "net/http"
-  "strconv"
   "strings"
   "github.com/ololko/simple-http-server/pkg/answerStructure"
   "google.golang.org/api/iterator" 
@@ -43,7 +42,12 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
   from = math.MinInt64
   to = math.MaxInt64
   searchedEvent = ""
-  request = parseRequest(requestLine)
+  
+  request,err := parseRequest(requestLine)
+  if err != nil{
+    w.WriteHeader(400)
+    return
+  }
 
   count = 0
   iter := client.Collection("users").Where("Type", "==", request.searchedEvent).Where("Timestamp", ">=", request.from).Where("Timestamp", "<=", request.to).Documents(context.Background())
