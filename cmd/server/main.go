@@ -18,10 +18,6 @@ import (
   "google.golang.org/api/option"
 )
 
-type AnswerStruct struct {
-  Count int64
-  Type string
-}
 type Limit struct {
   minTime int64
   maxTime int64

@@ -1,7 +1,16 @@
 package handleGET
 
 import(
-
+  "encoding/json"
+  "fmt"
+  "log"
+  "net/http"
+  "strconv"
+  "strings"
+  "answerStruct"
+  "google.golang.org/api/iterator" 
+  "golang.org/x/net/context"
+  firebase "firebase.google.com/go"
 )
 
 func handleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit Limit){
@@ -63,7 +72,7 @@ func handleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit 
               }
         }
 
-        answ := AnswerStruct{count, searchedEvent}
+        answ := answerStruct.AnswerStruct{count, searchedEvent}
         var answJson,error = json.Marshal(answ)
         if error != nil {
           w.WriteHeader(500)
