@@ -1,4 +1,4 @@
-package handleGET
+package handleGet
 
 import(
   "encoding/json"
@@ -14,7 +14,7 @@ import(
   firebase "firebase.google.com/go"
 )
 
-func HandleGET(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit limit.Limit){
+func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App ,limit limit.Limit){
   
   client, err := app.Firestore(context.Background())
             if err != nil {

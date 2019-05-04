@@ -34,7 +34,7 @@ func main() {
 
     http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
       if r.Method == "GET"{
-        handleGet.HandleGET(w, r, app, limit)
+        handleGet.HandleGet(w, r, app, limit)
         
         } else if r.Method == "POST"{
 
