@@ -3,7 +3,7 @@ package main
 import (
   "github.com/ololko/simple-http-server/pkg/decode"
   "github.com/ololko/simple-http-server/pkg/eventStructure" 
-  "github.com/ololko/simple-http-server/pkg/handleGet"
+  "github.com/ololko/simple-http-server/pkg/get"
   "log"
   "net/http"
   "os"
