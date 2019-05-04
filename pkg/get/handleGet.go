@@ -50,7 +50,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App){
         }
   }
 
-  answ := answerStruct.AnswerStruct{count, searchedEvent}
+  answ := answerStruct.AnswerStruct{count, request.searchedEvent}
   var answJson,error = json.Marshal(answ)
   if error != nil {
     w.WriteHeader(500)

@@ -31,7 +31,7 @@ func parseRequest(requestLine []string) (requestT, error) {
 	      continue
 	    }
 	    if strings.Contains(requestLine[i],"type="){
-	      searchedEvent = requestLine[i][5:]
+	      searchedEvent := requestLine[i][5:]
 	      request.searchedEvent = searchedEvent
 	      continue
 	    }
