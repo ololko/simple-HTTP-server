@@ -1,7 +1,7 @@
-package eventStructure
+package post
 
 
-type Event struct {
+type eventT struct {
   Count int64
   Type string
   Timestamp int64
