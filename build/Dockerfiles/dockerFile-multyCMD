@@ -1,0 +1,11 @@
+FROM golang:1.12 as Builder
+
+COPY . /app
+WORKDIR /app
+RUN go build -o /build/app cmd/server/main.go
+
+FROM alpine
+WORKDIR /app
+COPY --from=Builder /build/app .
+COPY --from=Builder /app/configs/serviceAccountKey.json .
+CMD ["./app 10000 serviceAccountKey.json"]
