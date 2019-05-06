@@ -1,3 +1,5 @@
+//function parseRequest parses GET request propted by user
+//function checks if integers are well written
 package get
 
 import(

@@ -1,3 +1,4 @@
+//Structure for answering GET request
 package get
 
 type answerT struct {
