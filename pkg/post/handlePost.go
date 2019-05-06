@@ -1,3 +1,5 @@
+//Package which handles POST request.
+//Checks conditions and creates file in database
 package post
 
 import (
