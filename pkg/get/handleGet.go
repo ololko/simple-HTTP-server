@@ -1,3 +1,5 @@
+//Package which handles GET request.
+//Checks conditions and answers to user
 package get
 
 import(

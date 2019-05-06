@@ -1,3 +1,7 @@
+/*
+Main fuinction of server.
+Server binds ports here and listens to incomming connection
+*/
 package main
 
 import (

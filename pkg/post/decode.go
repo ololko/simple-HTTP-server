@@ -1,3 +1,4 @@
+//Function decodes JSON and fills database structure
 package post
 
 import (

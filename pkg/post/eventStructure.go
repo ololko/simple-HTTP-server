@@ -1,3 +1,4 @@
+//Data structure as it is stored in firestore
 package post
 
 
