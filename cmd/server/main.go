@@ -5,39 +5,38 @@ Server binds ports here and listens to incomming connection
 package main
 
 import (
-  "github.com/ololko/simple-http-server/pkg/get"
-  "github.com/ololko/simple-http-server/pkg/post"
-  "log"
-  "net/http"
-  "os"
-  "golang.org/x/net/context"
-  firebase "firebase.google.com/go"
-  "google.golang.org/api/option"
+	firebase "firebase.google.com/go"
+	"github.com/ololko/simple-http-server/pkg/get"
+	"github.com/ololko/simple-http-server/pkg/post"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"log"
+	"net/http"
+	"os"
 )
-
 
 func main() {
 
-  port := ":" + os.Args[1]
-  path := os.Args[2]
+	port := ":" + os.Args[1]
+	path := os.Args[2]
 
-  opt := option.WithCredentialsFile(path)
-  app, err := firebase.NewApp(context.Background(), nil, opt)
-  if err != nil {
-    log.Fatalln(err)
-  }
+	opt := option.WithCredentialsFile(path)
+	app, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-  http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request){
-    if r.Method == "GET"{
-      get.HandleGet(w, r, app)
+	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			get.HandleGet(w, r, app)
 
-    } else if r.Method == "POST"{
-      post.HandlePost(w,r,app)
+		} else if r.Method == "POST" {
+			post.HandlePost(w, r, app)
 
-      } else {
-        w.WriteHeader(501)
-      }
-  })
+		} else {
+			w.WriteHeader(501)
+		}
+	})
 
-  log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, nil))
 }
