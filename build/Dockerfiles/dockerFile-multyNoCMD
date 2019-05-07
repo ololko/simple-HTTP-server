@@ -5,6 +5,6 @@ WORKDIR /app
 RUN go build -o /build/app cmd/server/main.go
 
 FROM alpine
-WORKDIR /app
-COPY --from=Builder /build/app .
-COPY --from=Builder /app/configs/serviceAccountKey.json .
+RUN apk add --update --no-cache ca-certificates git
+COPY --from=Builder /build/app /build/app
+COPY --from=Builder /app/configs/serviceAccountKey.json /build/serviceAccountKey.json
