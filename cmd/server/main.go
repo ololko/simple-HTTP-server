@@ -12,13 +12,12 @@ import (
 	"google.golang.org/api/option"
 	"log"
 	"net/http"
-	"os"
 )
 
 func main() {
 
-	port := ":" + os.Args[1]
-	path := os.Args[2]
+	port := ":10000"
+	path := "serviceAccountKey.json"
 
 	opt := option.WithCredentialsFile(path)
 	app, err := firebase.NewApp(context.Background(), nil, opt)
