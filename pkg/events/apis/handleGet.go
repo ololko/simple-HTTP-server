@@ -8,12 +8,14 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/firestore"
+	"github.com/ololko/simple-http-server/pkg/events/models"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 )
 
 func HandleGet(w http.ResponseWriter, r *http.Request, client *firestore.Client) {
 
+	var request models.RequestT
 	request, err := fillRequestStruct(r)
 	if err != nil {
 		fmt.Println(err)
@@ -21,7 +23,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request, client *firestore.Client)
 	}
 
 	var count int64
-	iter := client.Collection("users").Where("Type", "==", request.searchedEvent).Where("Timestamp", ">=", request.from).Where("Timestamp", "<=", request.to).Documents(context.Background())
+	iter := client.Collection("users").Where("Type", "==", request.Type).Where("Timestamp", ">=", request.From).Where("Timestamp", "<=", request.To).Documents(context.Background())
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -41,7 +43,7 @@ func HandleGet(w http.ResponseWriter, r *http.Request, client *firestore.Client)
 		}
 	}
 
-	answ := answerT{count, request.searchedEvent}
+	answ := models.AnswerT{count, request.Type}
 	answJson, err := json.Marshal(answ)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

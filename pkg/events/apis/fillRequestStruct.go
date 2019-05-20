@@ -4,14 +4,16 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/ololko/simple-http-server/pkg/events/models"
 )
 
-func fillRequestStruct(r *http.Request) (EventT, error) {
+func fillRequestStruct(r *http.Request) (models.RequestT, error) {
 	q := r.URL.Query()
 	var to int64 = math.MaxInt64
 	var from int64 = math.MinInt64
 	var err error
-	var request EventT
+	var request models.RequestT
 
 	if q.Get("from") != "" {
 		from, err = strconv.ParseInt(q.Get("from"), 10, 64)
