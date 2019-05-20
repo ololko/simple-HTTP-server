@@ -3,6 +3,7 @@
 package post
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -11,7 +12,8 @@ import (
 
 func HandlePost(w http.ResponseWriter, r *http.Request, client *firestore.Client) {
 
-	newEvent, err := decode(r)
+	var newEvent eventT
+	err := json.NewDecoder(r.Body).Decode(&newEvent)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
