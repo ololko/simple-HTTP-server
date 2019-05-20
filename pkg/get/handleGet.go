@@ -4,28 +4,19 @@ package get
 
 import (
 	"encoding/json"
-	firebase "firebase.google.com/go"
 	"fmt"
+	"net/http"
+
+	"cloud.google.com/go/firestore"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
-	"net/http"
-	"strings"
 )
 
-func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App) {
+func HandleGet(w http.ResponseWriter, r *http.Request, client *firestore.Client) {
 
-	client, err := app.Firestore(context.Background())
+	request, err := fillRequestStruct(r)
 	if err != nil {
 		fmt.Println(err)
-		return
-	}
-	defer client.Close()
-
-	var requestLine = strings.Split(r.URL.RawQuery, "&")
-
-	request, err := parseRequest(r.URL)
-	if err != nil {
-		w.WriteHeader(400)
 		return
 	}
 
@@ -38,26 +29,26 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App) {
 		}
 		if err != nil {
 			fmt.Println(err)
-			w.WriteHeader(502)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		if recData, ok := doc.Data()["Count"].(int64); ok {
 			count += recData
 		} else {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 
 	answ := answerT{count, request.searchedEvent}
-	var answJson, error = json.Marshal(answ)
-	if error != nil {
-		w.WriteHeader(500)
+	answJson, err := json.Marshal(answ)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(answJson)
 }
