@@ -1,7 +1,7 @@
 //Data structure as it is stored in firestore
-package post
+package models
 
-type eventT struct {
+type EventT struct {
 	Count     int64
 	Type      string
 	Timestamp int64

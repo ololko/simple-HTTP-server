@@ -10,8 +10,10 @@ import (
 	"net/http"
 
 	firebase "firebase.google.com/go"
+	"github.com/ololko/simple-http-server/pkg/apis"
 	"github.com/ololko/simple-http-server/pkg/get"
-	"github.com/ololko/simple-http-server/pkg/post"
+
+	//"github.com/ololko/simple-http-server/pkg/post"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
@@ -37,7 +39,7 @@ func main() {
 		if r.Method == "GET" {
 			get.HandleGet(w, r, client)
 		} else if r.Method == "POST" {
-			post.HandlePost(w, r, client)
+			apis.HandlePost(w, r, client)
 
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
