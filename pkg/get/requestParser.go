@@ -7,6 +7,9 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"fmt"
+	"net"
+	"net/url"
 )
 
 func parseRequest(requestLine []string) (requestT, error) {
@@ -15,6 +18,21 @@ func parseRequest(requestLine []string) (requestT, error) {
 		math.MaxInt64,
 		"",
 	}
+
+	u, err := url.Parse(requestLine)
+    if err != nil {
+        panic(err)
+    }
+
+	fmt.Println(u.RawQuery)
+    m, _ := url.ParseQuery(u.RawQuery)
+    fmt.Println(m)
+    fmt.Println(m["k"][0])
+
+
+
+
+   /* 
 	for i := 0; i < len(requestLine); i++ {
 		if strings.Contains(requestLine[i], "from=") {
 			from, err := strconv.ParseInt(requestLine[i][5:], 10, 64)
@@ -38,5 +56,5 @@ func parseRequest(requestLine []string) (requestT, error) {
 			continue
 		}
 	}
-	return request, nil
+	return request, nil*/
 }

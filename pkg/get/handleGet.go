@@ -23,14 +23,13 @@ func HandleGet(w http.ResponseWriter, r *http.Request, app *firebase.App) {
 
 	var requestLine = strings.Split(r.URL.RawQuery, "&")
 
-	request, err := parseRequest(requestLine)
+	request, err := parseRequest(r.URL)
 	if err != nil {
 		w.WriteHeader(400)
 		return
 	}
 
 	var count int64
-	count = 0
 	iter := client.Collection("users").Where("Type", "==", request.searchedEvent).Where("Timestamp", ">=", request.from).Where("Timestamp", "<=", request.to).Documents(context.Background())
 	for {
 		doc, err := iter.Next()
