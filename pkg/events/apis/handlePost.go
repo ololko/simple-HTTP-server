@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/firestore"
-	"github.com/ololko/simple-http-server/pkg/models"
+	"github.com/ololko/simple-http-server/pkg/events/models"
 	"golang.org/x/net/context"
 )
 

@@ -1,4 +1,4 @@
-package get
+package apis
 
 import (
 	"math"
@@ -6,12 +6,12 @@ import (
 	"strconv"
 )
 
-func fillRequestStruct(r *http.Request) (requestT, error) {
+func fillRequestStruct(r *http.Request) (EventT, error) {
 	q := r.URL.Query()
 	var to int64 = math.MaxInt64
 	var from int64 = math.MinInt64
 	var err error
-	var request requestT
+	var request EventT
 
 	if q.Get("from") != "" {
 		from, err = strconv.ParseInt(q.Get("from"), 10, 64)
@@ -29,9 +29,9 @@ func fillRequestStruct(r *http.Request) (requestT, error) {
 
 	searchedEvent := q.Get("type")
 
-	request.from = from
-	request.to = to
-	request.searchedEvent = searchedEvent
+	request.From = from
+	request.To = to
+	request.Type = searchedEvent
 
 	return request, nil
 }

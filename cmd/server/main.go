@@ -10,10 +10,7 @@ import (
 	"net/http"
 
 	firebase "firebase.google.com/go"
-	"github.com/ololko/simple-http-server/pkg/apis"
-	"github.com/ololko/simple-http-server/pkg/get"
-
-	//"github.com/ololko/simple-http-server/pkg/post"
+	"github.com/ololko/simple-http-server/pkg/events/apis"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
@@ -37,7 +34,7 @@ func main() {
 
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			get.HandleGet(w, r, client)
+			apis.HandleGet(w, r, client)
 		} else if r.Method == "POST" {
 			apis.HandlePost(w, r, client)
 
