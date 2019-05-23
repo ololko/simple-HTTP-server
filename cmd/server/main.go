@@ -11,9 +11,11 @@ import (
 
 	firebase "firebase.google.com/go"
 	"github.com/ololko/simple-http-server/pkg/events/apis"
+	"github.com/ololko/simple-http-server/pkg/events/readers"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
+
 
 func main() {
 
@@ -32,11 +34,19 @@ func main() {
 	}
 	defer client.Close()
 
+
+	svc := &apis.Service{
+		DataAccesser: readers.FirestoreAccesser{client},
+	}
+	//svc := &apis.Service{
+	//	dataReader: readers.MockAccesser{client}
+	//}
+
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			apis.HandleGet(w, r, client)
+			svc.HandleGet(w, r)
 		} else if r.Method == "POST" {
-			apis.HandlePost(w, r, client)
+			svc.HandlePost(w, r)
 
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
