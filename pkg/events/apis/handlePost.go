@@ -1,28 +1,22 @@
 //Package which handles POST request.
 //Checks conditions and creates file in database
-package post
+package apis
 
 import (
-	firebase "firebase.google.com/go"
-	"fmt"
-	"golang.org/x/net/context"
+	"encoding/json"
 	"net/http"
+
+	"cloud.google.com/go/firestore"
+	"github.com/ololko/simple-http-server/pkg/events/models"
+	"golang.org/x/net/context"
 )
 
-func HandlePost(w http.ResponseWriter, r *http.Request, app *firebase.App) {
+func HandlePost(w http.ResponseWriter, r *http.Request, client *firestore.Client) {
 
-	client, err := app.Firestore(context.Background())
+	var newEvent models.EventT
+	err := json.NewDecoder(r.Body).Decode(&newEvent)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer client.Close()
-
-	var newEvent eventT
-	newEvent = decode(r)
-
-	if newEvent.Type == "" {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -32,12 +26,12 @@ func HandlePost(w http.ResponseWriter, r *http.Request, app *firebase.App) {
 		"Timestamp": newEvent.Timestamp,
 	})
 	if error != nil {
-		w.WriteHeader(502)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-type", "text/plain")
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(DocRef.ID))
 	return
 }

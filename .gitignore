@@ -13,3 +13,6 @@
 
 go.sum
 configs/
+.vscode
+
+serviceAccountKey.json

@@ -1,7 +1,7 @@
 //Structure for answering GET request
-package get
+package models
 
-type answerT struct {
+type AnswerT struct {
 	Count int64
 	Type  string
 }
