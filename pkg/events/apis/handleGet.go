@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	//"github.com/ololko/simple-http-server/pkg/events/models"
 )
 
 func (s *Service) HandleGet(w http.ResponseWriter, r *http.Request) {

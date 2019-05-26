@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ololko/simple-http-server/pkg/events/models"
+	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
 func fillRequestStruct(r *http.Request) (models.RequestT, error) {

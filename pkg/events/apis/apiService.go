@@ -1,11 +1,17 @@
 package apis
 
-import(
-	"github.com/ololko/simple-http-server/pkg/events/readers"
-)
+import "github.com/ololko/simple-HTTP-server/pkg/events/accessers"
 
-type Service struct {
-	DataAccesser readers.DataAccesser
+func NewFirestoreService(dataAccesser accessers.DataAccesser) *Service {
+	return &Service{DataAccesser: dataAccesser}
 }
 
-type Mock struct {}
+func NewMockService() *Mock {
+	return &Mock{}
+}
+
+type Service struct {
+	DataAccesser accessers.DataAccesser
+}
+
+type Mock struct{}

@@ -6,16 +6,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/ololko/simple-HTTP-server/pkg/events/accessers"
 	"log"
 	"net/http"
 
 	firebase "firebase.google.com/go"
-	"github.com/ololko/simple-http-server/pkg/events/apis"
-	"github.com/ololko/simple-http-server/pkg/events/readers"
+	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
-
 
 func main() {
 
@@ -34,13 +33,8 @@ func main() {
 	}
 	defer client.Close()
 
-
-	svc := &apis.Service{
-		DataAccesser: readers.FirestoreAccesser{client},
-	}
-	//svc := &apis.Service{
-	//	dataReader: readers.MockAccesser{client}
-	//}
+	datAcc := &accessers.FirestoreAccesser{Client: client}
+	svc := apis.NewFirestoreService(datAcc)
 
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {

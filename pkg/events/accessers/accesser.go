@@ -1,7 +1,7 @@
-package readers
+package accessers
 
 import(
-    "github.com/ololko/simple-http-server/pkg/events/models"
+    "github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
 type DataAccesser interface{
