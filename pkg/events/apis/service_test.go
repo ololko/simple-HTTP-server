@@ -6,7 +6,6 @@ import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 )
 
