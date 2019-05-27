@@ -6,7 +6,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/ololko/simple-HTTP-server/pkg/events/accessers"
+	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
+	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"log"
 	"net/http"
 
@@ -16,11 +17,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+const(
+	port = ":10000"
+	path = "serviceAccountKey.json"
+)
+
 func main() {
-
-	port := ":10000"
-	path := "serviceAccountKey.json"
-
 	opt := option.WithCredentialsFile(path)
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
@@ -33,8 +35,8 @@ func main() {
 	}
 	defer client.Close()
 
-	datAcc := &accessers.FirestoreAccesser{Client: client}
-	svc := apis.NewFirestoreService(datAcc)
+	datAcc := &accessor.MockAccess{make(map[string][]models.EventT)}
+	svc := apis.NewService(datAcc)
 
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {

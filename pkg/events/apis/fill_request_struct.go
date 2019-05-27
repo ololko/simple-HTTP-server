@@ -8,7 +8,7 @@ import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
-func fillRequestStruct(r *http.Request) (models.RequestT, error) {
+func fillRequestStruck(r *http.Request) (models.RequestT, error) {
 	q := r.URL.Query()
 	var to int64 = math.MaxInt64
 	var from int64 = math.MinInt64
@@ -29,11 +29,9 @@ func fillRequestStruct(r *http.Request) (models.RequestT, error) {
 		}
 	}
 
-	searchedEvent := q.Get("type")
-
 	request.From = from
 	request.To = to
-	request.Type = searchedEvent
+	request.Type = q.Get("type")
 
 	return request, nil
 }

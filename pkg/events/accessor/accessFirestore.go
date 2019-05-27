@@ -1,4 +1,4 @@
-package accessers
+package accessor
 
 import (
 	"cloud.google.com/go/firestore"
@@ -8,11 +8,11 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-type FirestoreAccesser struct {
+type FirestoreAccess struct {
 	Client *firestore.Client
 }
 
-func (d *FirestoreAccesser) Read(request models.RequestT) (models.AnswerT, error) {
+func (d *FirestoreAccess) ReadEvent(request models.RequestT) (models.AnswerT, error) {
 	var count int64
 	iter := d.Client.Collection("users").Where("Type", "==", request.Type).Where("Timestamp", ">=", request.From).Where("Timestamp", "<=", request.To).Documents(context.Background())
 	for {
@@ -35,7 +35,7 @@ func (d *FirestoreAccesser) Read(request models.RequestT) (models.AnswerT, error
 	return models.AnswerT{count, request.Type}, nil
 }
 
-func (d *FirestoreAccesser) Write(insert models.EventT) ([]byte, error) {
+func (d *FirestoreAccess) WriteEvent(insert models.EventT) ([]byte, error) {
 	DocRef, _, err := d.Client.Collection("users").Add(context.Background(), insert)
 	if err != nil {
 		return []byte{}, err
