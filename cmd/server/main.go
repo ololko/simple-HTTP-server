@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
-	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"log"
 	"net/http"
 
@@ -35,7 +34,9 @@ func main() {
 	}
 	defer client.Close()
 
-	datAcc := &accessor.MockAccess{make(map[string][]models.EventT)}
+	/*datAcc := &accessor.MockAccess{make(map[string][]models.EventT)}
+	svc := apis.NewService(datAcc)*/
+	datAcc := &accessor.FirestoreAccess{Client:client}
 	svc := apis.NewService(datAcc)
 
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {

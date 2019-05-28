@@ -1,161 +1,158 @@
 package apis
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestHandleGet(t *testing.T) {
-	candidates := []struct{
-		events map[string][]models.EventT
-		response models.AnswerT
+type ApiSuite struct {
+	suite.Suite
+	service *Service
+}
+
+func (s *ApiSuite) SetupSuite() {
+	s.service = NewService(&accessor.MockAccess{})
+}
+
+func (s *ApiSuite) SetupTest() {
+	// add new data to database
+	s.service.DataAccessor = &accessor.MockAccess{
+		Events: map[string][]models.EventT{
+			"Skuska": {
+				{
+					Count:     2,
+					Type:      "Skuska",
+					Timestamp: 0,
+				},
+				{
+					Count:     4,
+					Type:      "Skuska",
+					Timestamp: 6,
+				},
+				{
+					Count:     8,
+					Type:      "Skuska",
+					Timestamp: 4,
+				},
+				{
+					Count:     1,
+					Type:      "Skuska",
+					Timestamp: 10,
+				},
+			},
+		},
+	}
+}
+
+func (s *ApiSuite) TestHandleGet() {
+	candidates := []struct {
+		url          string
+		expected     models.AnswerT
+		expectedCode int
 	}{
 		{
-			events: map[string][]models.EventT{
-				"Skuska": {
-					{
-						Count: 2,
-						Type: "Skuska",
-						Timestamp: 0,
-					},
-					{
-						Count: 4,
-						Type: "Skuska",
-						Timestamp: 6,
-					},
-				},
+			url: "/events?type=Skuska&from=3&to=7",
+			expected: models.AnswerT{
+				Type:  "Skuska",
+				Count: 12,
 			},
-			response: models.AnswerT{
-				Type: "Skuska",
-				Count: 6,
-			},
+			expectedCode: http.StatusOK,
 		},
 		{
-			events: map[string][]models.EventT{
-				"Skuska": {
-					{
-						Count: 13,
-						Type: "Skuska",
-						Timestamp: 0,
-					},
-				},
-			},
-			response: models.AnswerT{
-				Type: "Skuska",
-				Count: 13,
-			},
+			url:          "/events?type=Skuska&from=3&to=75fdg",
+			expected:     models.AnswerT{},
+			expectedCode: http.StatusBadRequest,
 		},
 		{
-			events: map[string][]models.EventT{
-			},
-			response: models.AnswerT{
-				Type: "Skuska",
+			url: "/events?type=NoData&from=3",
+			expected: models.AnswerT{
+				Type:  "NoData",
 				Count: 0,
 			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			url: "/events?type=Skuska&from=10",
+			expected: models.AnswerT{
+				Type:  "Skuska",
+				Count: 1,
+			},
+			expectedCode: http.StatusOK,
 		},
 	}
 
 	for _, c := range candidates {
-		req, err := http.NewRequest("GET", "/events?type=Skuska", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		req, err := http.NewRequest("GET", c.url, nil)
+		s.NoError(err)
 
 		rr := httptest.NewRecorder()
-		svc := &Service{
-			DataAccessor: &accessor.MockAccess{
-				Events: c.events,
-			},
-		}
 
-		handler := http.HandlerFunc(svc.HandleGet)
+		handler := http.HandlerFunc(s.service.HandleGet)
 
 		handler.ServeHTTP(rr, req)
 
 		// Check the status code is what we expect.
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		}
+		s.Equal(c.expectedCode, rr.Code)
+
+		received := models.AnswerT{}
+
+		err = json.Unmarshal(rr.Body.Bytes(), &received)
+		s.NoError(err)
 
 		// Check the response body is what we expect.
-		var recieved models.AnswerT
-		expected := c.response // expecting structure
-		json.Unmarshal(rr.Body.Bytes(), &recieved)
-
-		if recieved != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v",
-				rr.Body.String(), expected)
-		}
+		s.Equal(c.expected, received)
 	}
 }
 
-
-
-type requestBody struct{
-	content map[string]string
-
-}
-
-func (rb *requestBody) Read (p []byte) (n int, err error){
-	var i int
-	for j, headder := range rb.content {
-		for k,c := range headder {
-			i = i+k
-			p[i] = byte(c)
-		}
-	}
-	return i, nil
-}
-
-
-
-func TestHandlePost(t *testing.T) {
-	candidates := []struct{
-		rb requestBody
+func (s *ApiSuite) TestHandlePost() {
+	candidates := []struct {
+		newEvent models.EventT
 		response string
+		expectedCode int
 	}{
 		{
-			rb: requestBody. {"type": {"Skuska"}, "count": {"100"}, "timestamp": {"3"}},
+			newEvent: models.EventT{
+				Type: "Skuska",
+				Timestamp: 100,
+				Count: 3,
+			},
 			response: "Skuska",
+			expectedCode:http.StatusCreated,
+		},
+		{
+			newEvent: models.EventT{
+				Type: "Skuska",
+				Timestamp: 5,
+				Count: 36,
+			},
+			response: "Skuska",
+			expectedCode:http.StatusCreated,
 		},
 	}
 
 	for _, c := range candidates {
-		req, err := http.NewRequest("POST", "/events", c.requestBody)
-		if err != nil {
-			t.Fatal(err)
-		}
+		bb, _ := json.Marshal(c.newEvent)
+		req, err := http.NewRequest("POST", "/events", bytes.NewBuffer(bb))
+		s.NoError(err)
 
 		rr := httptest.NewRecorder()
-		svc := &Service{
-			DataAccessor: &accessor.MockAccess{
-				Events: make(map[string][]models.EventT),
-			},
-		}
-
-		handler := http.HandlerFunc(svc.HandlePost)
-
+		handler := http.HandlerFunc(s.service.HandlePost)
 		handler.ServeHTTP(rr, req)
 
 		// Check the status code is what we expect.
-		if status := rr.Code; status != http.StatusCreated {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
-		}
+		s.Equal(c.expectedCode,rr.Code)
 
 		// Check the response requestBody is what we expect.
-		expected := c.response // expecting structure
-		recieved := rr.Body.String()
-
-		if recieved != expected {
-			t.Errorf("handler returned unexpected body: got %v want %v",
-				rr.Body.String(), expected)
-		}
+		s.Equal(c.response,rr.Body.String())
 	}
+}
 
-
-
+func TestApiSuite(t *testing.T) {
+	suite.Run(t, new(ApiSuite))
 }

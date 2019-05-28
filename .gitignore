@@ -14,5 +14,6 @@
 go.sum
 configs/
 .vscode
+vendor/
 
 serviceAccountKey.json
