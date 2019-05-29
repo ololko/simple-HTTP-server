@@ -24,7 +24,7 @@ func (s *Service) HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	data := make(chan models.AnswerT)
+	data := make(chan models.AnswerT, 1)
 	errChan := make (chan error)
 
 	go s.DataAccessor.ReadEvent(request, data, errChan)
