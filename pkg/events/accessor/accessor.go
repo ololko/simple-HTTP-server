@@ -1,11 +1,10 @@
 package accessor
 
-import(
-    "github.com/ololko/simple-HTTP-server/pkg/events/custom_errors"
+import (
     "github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
 type DataAccesser interface{
-    ReadEvent(models.RequestT) (models.AnswerT, custom_errors.ElementDoesNotExistError)
-    WriteEvent(models.EventT) ([]byte, error)
+    ReadEvent(models.RequestT, chan<- models.AnswerT, chan<- error)
+    WriteEvent(models.EventT, chan<- string, chan<- error)
 }

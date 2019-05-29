@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
-	"github.com/ololko/simple-HTTP-server/pkg/events/custom_errors"
 	"net/http"
 )
 
@@ -21,36 +20,28 @@ func (s *Service) HandleGet(w http.ResponseWriter, r *http.Request) {
 	request, err := fillRequestStruck(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		data,_ := json.Marshal(models.AnswerT{})
-		_,err := w.Write(data)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Println(err)
 		return
 	}
 
-	var customErr custom_errors.ElementDoesNotExistError
-	data,customErr := s.DataAccessor.ReadEvent(request)
-	if customErr.ReallyError == true{
-		if customErr.CanContinue == true {
-			w.WriteHeader(http.StatusNotFound)
-			answerJSON, _ := json.Marshal(data)
-			w.Write(answerJSON)
-			return
-		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+
+	data := make(chan models.AnswerT)
+	errChan := make (chan error)
+
+	go s.DataAccessor.ReadEvent(request, data, errChan)
+	if <-errChan != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 
-
-	answerJSON, err := json.Marshal(data)
+	answerJSON, err := json.Marshal(<-data)
+	if err != nil {
+		fmt.Println("error creating JSON")
+		return
+	}
 	w.Header().Set("Content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_,err = w.Write(answerJSON)
+	_, err = w.Write(answerJSON)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -66,19 +57,21 @@ func (s *Service) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Id, err := s.DataAccessor.WriteEvent(newEvent)
-	if err != nil {
+
+	returnType := make(chan string)
+	chanErr := make(chan error)
+
+	go s.DataAccessor.WriteEvent(newEvent, returnType, chanErr)
+	if <-chanErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	_,err = w.Write(Id)
+	_, err = w.Write([]byte(<-returnType))
 	if err != nil {
 		return
 	}
 	return
 }
-
-

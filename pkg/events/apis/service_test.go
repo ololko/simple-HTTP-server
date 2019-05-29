@@ -72,7 +72,7 @@ func (s *ApiSuite) TestHandleGet() {
 		{
 			url: "/events?type=NoData&from=3",
 			expected: models.AnswerT{
-				Type:  "NoData",
+				Type:  "",
 				Count: 0,
 			},
 			expectedCode: http.StatusNotFound,

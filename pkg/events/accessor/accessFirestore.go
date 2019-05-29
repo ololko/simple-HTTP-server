@@ -2,50 +2,72 @@ package accessor
 
 import (
 	"cloud.google.com/go/firestore"
+	"errors"
 	"fmt"
-	"github.com/ololko/simple-HTTP-server/pkg/events/custom_errors"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+	//"reflect"
 )
 
 type FirestoreAccess struct {
 	Client *firestore.Client
 }
 
-func (d *FirestoreAccess) ReadEvent(request models.RequestT) (models.AnswerT, custom_errors.ElementDoesNotExistError) {
+func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, chanErr chan<- error) {
 	var count int64
+	elementExists := false
 	iter := d.Client.Collection("users").Where("Type", "==", request.Type).Where("Timestamp", ">=", request.From).Where("Timestamp", "<=", request.To).Documents(context.Background())
+	defer iter.Stop()
+
+	/*fmt.Println("S documents %v",reflect.TypeOf(iter))
 	if iter == nil {
 		fmt.Println("Iter is nil")
-		return models.AnswerT{Type:request.Type, Count:0},custom_errors.ElementDoesNotExistError{"Searched element is not in database", true, true}
+		return models.AnswerT{},custom_errors.ElementDoesNotExistError{"Searched element is not in database", true, true}
 	}
 	fmt.Println("iter is not nil")
-	fmt.Println(iter)
+	fmt.Println(iter)*/
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
-			break
+			if elementExists {
+				break
+			} else {
+				answer <- models.AnswerT{}
+				chanErr <- errors.New("Element is not in database")
+				return
+			}
 		}
 		if err != nil {
 			fmt.Println(err)
-			return models.AnswerT{}, custom_errors.ElementDoesNotExistError{"Searched element is not in database", false, true}
+			answer <- models.AnswerT{}
+			chanErr <- err
+			return
 		}
 
 		if recData, ok := doc.Data()["Count"].(int64); ok {
 			count += recData
 		} else {
-			return models.AnswerT{}, custom_errors.ElementDoesNotExistError{"Searched element is not in database", false, true}
+			answer <- models.AnswerT{}
+			chanErr <- err
+			return
 		}
+		elementExists = true
 	}
 
-	return models.AnswerT{count, request.Type}, custom_errors.ElementDoesNotExistError{"AKO TOMUTO DAT NIL?", true, false}
+	answer <- models.AnswerT{Count:count, Type:request.Type}
+	chanErr <- nil
+	return
 }
 
-func (d *FirestoreAccess) WriteEvent(insert models.EventT) ([]byte, error) {
-	DocRef, _, err := d.Client.Collection("users").Add(context.Background(), insert)
+func (d *FirestoreAccess) WriteEvent(insert models.EventT, answer chan<- string, errChan chan<- error) {
+	_, _, err := d.Client.Collection("users").Add(context.Background(), insert)
 	if err != nil {
-		return []byte{}, err
+		errChan <- err
+		answer <- ""
+		return
 	}
-	return []byte(DocRef.ID), nil
+	errChan <- nil
+	answer <- insert.Type
+	return
 }

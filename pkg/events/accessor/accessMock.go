@@ -1,7 +1,7 @@
 package accessor
 
 import (
-	"github.com/ololko/simple-HTTP-server/pkg/events/custom_errors"
+	"errors"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
@@ -9,25 +9,38 @@ type MockAccess struct {
 	Events map[string][]models.EventT
 }
 
-func (d *MockAccess) ReadEvent(request models.RequestT) (models.AnswerT, custom_errors.ElementDoesNotExistError) {
-	var count int64
-
+func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, errChan chan<- error) {
 	_, exists := d.Events[request.Type]
 	if !exists {
-		return models.AnswerT{count,request.Type}, custom_errors.ElementDoesNotExistError{"Element does not exist", true, true}
+		errChan <- errors.New("err: element does not exist")
+		answer <- models.AnswerT{}
+		return
 	}
 
-
+	var count int64
+	inRange := false
 	for _,event := range d.Events[request.Type]{
 		if event.Timestamp >= request.From && event.Timestamp <= request.To {
 			count = count + event.Count
+			inRange = true
 		}
 	}
 
-	return models.AnswerT{count,request.Type}, custom_errors.ElementDoesNotExistError{"AKO SEM DAT NIL?", true, false}
+	if inRange{
+		errChan <- nil
+		answer <- models.AnswerT{count,request.Type}
+		return
+	}else{
+		errChan <- errors.New("Searched event does not exist in range")
+		answer <- models.AnswerT{}
+		return
+	}
 }
 
-func (d *MockAccess) WriteEvent(newEvent models.EventT) ([]byte, error) {
+func (d *MockAccess) WriteEvent(newEvent models.EventT, answer chan<- string, errChan chan<- error) {
 	d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
-	return []byte(newEvent.Type),nil
+
+	errChan <- nil
+	answer <- newEvent.Type
+	return
 }
