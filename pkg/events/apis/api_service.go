@@ -2,76 +2,66 @@ package apis
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
+	"github.com/labstack/echo"
+	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"net/http"
 )
 
 type Service struct {
-	DataAccessor accessor.DataAccesser
+	DataAccessor access.DataAccesser
 }
 
-func NewService(dataAccessor accessor.DataAccesser) *Service {
+func marshalAndSend(w http.ResponseWriter, data models.AnswerT, statusCode int) error {
+	answerJSON, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	w.WriteHeader(statusCode)
+	w.Header().Set("Content-type", "application/json")
+	_, err = w.Write(answerJSON)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewService(dataAccessor access.DataAccesser) *Service {
 	return &Service{DataAccessor: dataAccessor}
 }
 
-func (s *Service) HandleGet(w http.ResponseWriter, r *http.Request) {
-	request, err := fillRequestStruck(r)
+func (s *Service) HandleGet(c echo.Context) error {
+	request, err := fillRequestStruck(c.Request().URL)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-
 	data := make(chan models.AnswerT, 1)
-	errChan := make (chan error)
+	errChan := make(chan error)
 
 	go s.DataAccessor.ReadEvent(request, data, errChan)
 	if <-errChan != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
+		return echo.NewHTTPError(http.StatusNotFound)
 	}
 
-
-	answerJSON, err := json.Marshal(<-data)
-	if err != nil {
-		fmt.Println("error creating JSON")
-		return
-	}
-	w.Header().Set("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(answerJSON)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	return c.JSON(http.StatusOK, <-data)
 }
 
-func (s *Service) HandlePost(w http.ResponseWriter, r *http.Request) {
+func (s *Service) HandlePost(c echo.Context) error {
 
 	var newEvent models.EventT
-	err := json.NewDecoder(r.Body).Decode(&newEvent)
+	err := json.NewDecoder(c.Request().Body).Decode(&newEvent)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		echo.NewHTTPError(http.StatusBadRequest)
 	}
-
 
 	returnType := make(chan string)
 	chanErr := make(chan error)
 
 	go s.DataAccessor.WriteEvent(newEvent, returnType, chanErr)
-	if <-chanErr != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	if err = <-chanErr; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 
-	w.Header().Set("Content-type", "text/plain")
-	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte(<-returnType))
-	if err != nil {
-		return
-	}
-	return
+	return c.JSON(http.StatusOK, <-returnType)
 }

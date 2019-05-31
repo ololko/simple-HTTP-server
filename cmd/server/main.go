@@ -6,11 +6,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
+	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"log"
-	"net/http"
+	//"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	firebase "firebase.google.com/go"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
@@ -34,21 +39,32 @@ func main() {
 	}
 	defer client.Close()
 
-	/*datAcc := &accessor.MockAccess{make(map[string][]models.EventT)}
+	/*datAcc := &access.MockAccess{make(map[string][]models.EventT)}
 	svc := apis.NewService(datAcc)*/
-	datAcc := &accessor.FirestoreAccess{Client:client}
+	datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)
 
-	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			svc.HandleGet(w, r)
-		} else if r.Method == "POST" {
-			svc.HandlePost(w, r)
+	e := echo.New()
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	// Routes
+	e.GET("/events", svc.HandleGet)
+	e.POST("/events", svc.HandlePost)
 
-		} else {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+	go func () {
+		if err := e.Start(":10000"); err != nil {
+			e.Logger.Info("shutting down the server")
 		}
-	})
+	}()
 
-	log.Fatal(http.ListenAndServe(port, nil))
+	stop  := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	<- stop
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		panic(err)
+	}
 }

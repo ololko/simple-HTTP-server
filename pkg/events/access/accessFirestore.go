@@ -1,4 +1,4 @@
-package accessor
+package access
 
 import (
 	"cloud.google.com/go/firestore"
@@ -19,14 +19,6 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 	elementExists := false
 	iter := d.Client.Collection("users").Where("Type", "==", request.Type).Where("Timestamp", ">=", request.From).Where("Timestamp", "<=", request.To).Documents(context.Background())
 	defer iter.Stop()
-
-	/*fmt.Println("S documents %v",reflect.TypeOf(iter))
-	if iter == nil {
-		fmt.Println("Iter is nil")
-		return models.AnswerT{},custom_errors.ElementDoesNotExistError{"Searched element is not in database", true, true}
-	}
-	fmt.Println("iter is not nil")
-	fmt.Println(iter)*/
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {

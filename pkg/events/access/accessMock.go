@@ -1,4 +1,4 @@
-package accessor
+package access
 
 import (
 	"errors"

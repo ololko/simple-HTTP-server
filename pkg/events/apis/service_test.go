@@ -2,10 +2,18 @@ package apis
 
 import (
 	"bytes"
+	"cloud.google.com/go/firestore"
 	"encoding/json"
-	"github.com/ololko/simple-HTTP-server/pkg/events/accessor"
+	firebase "firebase.google.com/go"
+	"fmt"
+	"github.com/labstack/echo"
+	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,15 +22,35 @@ import (
 type ApiSuite struct {
 	suite.Suite
 	service *Service
+	client *firestore.Client
 }
 
+const(
+	path = "../../../configs/serviceAccountKey.json"
+)
+
 func (s *ApiSuite) SetupSuite() {
-	s.service = NewService(&accessor.MockAccess{})
+	//s.service = NewService(&access.MockAccess{})
+
+	opt := option.WithCredentialsFile(path)
+	app, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	client, err := app.Firestore(context.Background())
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	datAcc := &access.FirestoreAccess{Client: client}
+	s.service = NewService(datAcc)
+	s.client = client
 }
 
 func (s *ApiSuite) SetupTest() {
 	// add new data to database
-	s.service.DataAccessor = &accessor.MockAccess{
+	/*s.service.DataAccessor = &access.MockAccess{
 		Events: map[string][]models.EventT{
 			"Skuska": {
 				{
@@ -47,10 +75,10 @@ func (s *ApiSuite) SetupTest() {
 				},
 			},
 		},
-	}
+	}*/
 }
 
-func (s *ApiSuite) TestHandleGet() {
+func (s *ApiSuite) TestHandleGet(t *testing.T) {
 	candidates := []struct {
 		url          string
 		expected     models.AnswerT
@@ -71,6 +99,11 @@ func (s *ApiSuite) TestHandleGet() {
 		},
 		{
 			url: "/events?type=NoData&from=3",
+			expected: models.AnswerT{},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			url: "/events?type=NoData",
 			expected: models.AnswerT{
 				Type:  "",
 				Count: 0,
@@ -85,32 +118,33 @@ func (s *ApiSuite) TestHandleGet() {
 			},
 			expectedCode: http.StatusOK,
 		},
+		{
+			url: "/events?type=Skuska&to=7&from=3",
+			expected: models.AnswerT{
+				Type:  "Skuska",
+				Count: 12,
+			},
+			expectedCode: http.StatusOK,
+		},
+
 	}
 
-	for _, c := range candidates {
-		req, err := http.NewRequest("GET", c.url, nil)
-		s.NoError(err)
+	e := echo.New()
 
-		rr := httptest.NewRecorder()
+	for _, candidate := range candidates {
+		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+		h := s.service.HandleGet
 
-		handler := http.HandlerFunc(s.service.HandleGet)
-
-		handler.ServeHTTP(rr, req)
-
-		// Check the status code is what we expect.
-		s.Equal(c.expectedCode, rr.Code)
-
-		received := models.AnswerT{}
-
-		err = json.Unmarshal(rr.Body.Bytes(), &received)
-		s.NoError(err)
-
-		// Check the response body is what we expect.
-		s.Equal(c.expected, received)
+		if assert.NoError(t, h(ctx)) {
+			assert.Equal(t, candidate.expectedCode, rec.Code)
+			assert.Equal(t, candidate.expected, rec.Body)
+		}
 	}
 }
 
-func (s *ApiSuite) TestHandlePost() {
+func (s *ApiSuite) TestHandlePost(t *testing.T) {
 	candidates := []struct {
 		newEvent models.EventT
 		response string
@@ -136,23 +170,31 @@ func (s *ApiSuite) TestHandlePost() {
 		},
 	}
 
+
+
+	e := echo.New()
+	h := s.service.HandlePost
+
 	for _, c := range candidates {
 		bb, _ := json.Marshal(c.newEvent)
-		req, err := http.NewRequest("POST", "/events", bytes.NewBuffer(bb))
-		s.NoError(err)
+		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(bb))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(s.service.HandlePost)
-		handler.ServeHTTP(rr, req)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
 
-		// Check the status code is what we expect.
-		s.Equal(c.expectedCode,rr.Code)
-
-		// Check the response requestBody is what we expect.
-		s.Equal(c.response,rr.Body.String())
+		if assert.NoError(t, h(ctx)) {
+			assert.Equal(t, http.StatusCreated, rec.Code)
+			assert.Equal(t, c.response, rec.Body.String())
+		}
 	}
 }
 
 func TestApiSuite(t *testing.T) {
 	suite.Run(t, new(ApiSuite))
+}
+
+
+func (s *ApiSuite) TearDownSuite() {
+	s.client.Close()
 }

@@ -2,14 +2,14 @@ package apis
 
 import (
 	"math"
-	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
-func fillRequestStruck(r *http.Request) (models.RequestT, error) {
-	q := r.URL.Query()
+func fillRequestStruck(u *url.URL) (models.RequestT, error) {
+	q := u.Query()
 	var to int64 = math.MaxInt64
 	var from int64 = math.MinInt64
 	var err error

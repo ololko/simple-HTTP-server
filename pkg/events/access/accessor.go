@@ -1,4 +1,4 @@
-package accessor
+package access
 
 import (
     "github.com/ololko/simple-HTTP-server/pkg/events/models"
