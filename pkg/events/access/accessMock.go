@@ -2,6 +2,8 @@ package access
 
 import (
 	"errors"
+
+	log "github.com/sirupsen/logrus"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 )
 
@@ -12,7 +14,10 @@ type MockAccess struct {
 func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, errChan chan<- error) {
 	_, exists := d.Events[request.Type]
 	if !exists {
-		errChan <- errors.New("err: element does not exist")
+		log.WithFields(log.Fields{
+			"type": request.Type,
+		}).Info("Requested event does not exist!")
+		errChan <- errors.New("Searched event does not exist")
 		answer <- models.AnswerT{}
 		return
 	}
@@ -31,6 +36,11 @@ func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.Ans
 		answer <- models.AnswerT{count,request.Type}
 		return
 	}else{
+		log.WithFields(log.Fields{
+			"type": request.Type,
+			"from": request.From,
+			"to":	request.To,
+		}).Info("Requested event does not exist in range!")
 		errChan <- errors.New("Searched event does not exist in range")
 		answer <- models.AnswerT{}
 		return

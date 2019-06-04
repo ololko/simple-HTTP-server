@@ -3,11 +3,10 @@ package access
 import (
 	"cloud.google.com/go/firestore"
 	"errors"
-	"fmt"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
-	//"reflect"
 )
 
 type FirestoreAccess struct {
@@ -25,13 +24,20 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 			if elementExists {
 				break
 			} else {
+				log.WithFields(log.Fields{
+					"type": request.Type,
+					"from": request.From,
+					"to":	request.To,
+				}).Info("Requested event does not exist in range!")
 				answer <- models.AnswerT{}
 				chanErr <- errors.New("Element is not in database")
 				return
 			}
 		}
 		if err != nil {
-			fmt.Println(err)
+			log.WithFields(log.Fields{
+				"type": request.Type,
+			}).Error("Unexpected error with firestore while reading")
 			answer <- models.AnswerT{}
 			chanErr <- err
 			return
@@ -40,6 +46,9 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 		if recData, ok := doc.Data()["Count"].(int64); ok {
 			count += recData
 		} else {
+			log.WithFields(log.Fields{
+				"type": request.Type,
+			}).Error("Unexpected error. Database is incosistent in COUNT field!")
 			answer <- models.AnswerT{}
 			chanErr <- err
 			return
@@ -55,6 +64,9 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 func (d *FirestoreAccess) WriteEvent(insert models.EventT, answer chan<- string, errChan chan<- error) {
 	_, _, err := d.Client.Collection("users").Add(context.Background(), insert)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"type": insert.Type,
+		}).Error("Unexpected error while creating new event in database")
 		errChan <- err
 		answer <- ""
 		return

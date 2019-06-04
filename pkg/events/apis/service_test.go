@@ -4,16 +4,11 @@ import (
 	"bytes"
 	"cloud.google.com/go/firestore"
 	"encoding/json"
-	firebase "firebase.google.com/go"
-	"fmt"
 	"github.com/labstack/echo"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/net/context"
-	"google.golang.org/api/option"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,9 +25,9 @@ const(
 )
 
 func (s *ApiSuite) SetupSuite() {
-	//s.service = NewService(&access.MockAccess{})
+	s.service = NewService(&access.MockAccess{})
 
-	opt := option.WithCredentialsFile(path)
+	/*opt := option.WithCredentialsFile(path)
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		log.Fatalln(err)
@@ -45,12 +40,12 @@ func (s *ApiSuite) SetupSuite() {
 
 	datAcc := &access.FirestoreAccess{Client: client}
 	s.service = NewService(datAcc)
-	s.client = client
+	s.client = client*/
 }
 
 func (s *ApiSuite) SetupTest() {
 	// add new data to database
-	/*s.service.DataAccessor = &access.MockAccess{
+	s.service.DataAccessor = &access.MockAccess{
 		Events: map[string][]models.EventT{
 			"Skuska": {
 				{
@@ -75,10 +70,10 @@ func (s *ApiSuite) SetupTest() {
 				},
 			},
 		},
-	}*/
+	}
 }
 
-func (s *ApiSuite) TestHandleGet(t *testing.T) {
+func (s *ApiSuite) TestGetValidInputs() {
 	candidates := []struct {
 		url          string
 		expected     models.AnswerT
@@ -91,24 +86,6 @@ func (s *ApiSuite) TestHandleGet(t *testing.T) {
 				Count: 12,
 			},
 			expectedCode: http.StatusOK,
-		},
-		{
-			url:          "/events?type=Skuska&from=3&to=75fdg",
-			expected:     models.AnswerT{},
-			expectedCode: http.StatusBadRequest,
-		},
-		{
-			url: "/events?type=NoData&from=3",
-			expected: models.AnswerT{},
-			expectedCode: http.StatusNotFound,
-		},
-		{
-			url: "/events?type=NoData",
-			expected: models.AnswerT{
-				Type:  "",
-				Count: 0,
-			},
-			expectedCode: http.StatusNotFound,
 		},
 		{
 			url: "/events?type=Skuska&from=10",
@@ -131,20 +108,79 @@ func (s *ApiSuite) TestHandleGet(t *testing.T) {
 
 	e := echo.New()
 
+	for i, candidate := range candidates {
+		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+		h := s.service.HandleGet
+
+		s.Error(h(ctx))
+		var received models.AnswerT
+		s.NoError(json.Unmarshal(rec.Body.Bytes(),&received))
+
+		assert.Equal(s.T(), candidate.expectedCode,  rec.Code, "Error in expected code in test number %d",i )
+		assert.Equal(s.T(), candidate.expected, received, "Error in body answer in test number %d",i)
+	}
+}
+
+func (s *ApiSuite) TestGetBadRequest()  {
+	candidates := []struct {
+		url          string
+		expected     models.AnswerT
+		expectedCode int
+	}{
+		{
+			url:          "/events?type=Skuska&from=3&to=75fdg",
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	e := echo.New()
+
 	for _, candidate := range candidates {
 		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 		h := s.service.HandleGet
 
-		if assert.NoError(t, h(ctx)) {
-			assert.Equal(t, candidate.expectedCode, rec.Code)
-			assert.Equal(t, candidate.expected, rec.Body)
-		}
+		s.Error(h(ctx))
+
+		assert.Equal(s.T(), candidate.expectedCode,  rec.Code, rec.Body.String())
 	}
 }
 
-func (s *ApiSuite) TestHandlePost(t *testing.T) {
+func (s *ApiSuite) TestGetNotFound() {
+	candidates := []struct {
+		url          string
+		expected     models.AnswerT
+		expectedCode int
+	}{
+		{
+			url:          "/events?type=NoData&from=3",
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			url: "/events?type=NoData",
+			expectedCode: http.StatusNotFound,
+		},
+	}
+
+	e := echo.New()
+
+	for i, candidate := range candidates {
+		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+		h := s.service.HandleGet
+
+		s.Error(h(ctx))
+
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code, "Error in expected code in test number %d", i)
+	}
+}
+
+
+func (s *ApiSuite) TestHandlePost() {
 	candidates := []struct {
 		newEvent models.EventT
 		response string
@@ -170,8 +206,6 @@ func (s *ApiSuite) TestHandlePost(t *testing.T) {
 		},
 	}
 
-
-
 	e := echo.New()
 	h := s.service.HandlePost
 
@@ -183,9 +217,9 @@ func (s *ApiSuite) TestHandlePost(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(t, h(ctx)) {
-			assert.Equal(t, http.StatusCreated, rec.Code)
-			assert.Equal(t, c.response, rec.Body.String())
+		if assert.NoError(s.T(), h(ctx)) {
+			assert.Equal(s.T(), http.StatusCreated, rec.Code)
+			assert.Equal(s.T(), c.response, rec.Body.String())
 		}
 	}
 }
@@ -196,5 +230,5 @@ func TestApiSuite(t *testing.T) {
 
 
 func (s *ApiSuite) TearDownSuite() {
-	s.client.Close()
+	//s.NoError(s.client.Close())
 }

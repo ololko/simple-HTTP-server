@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	log "github.com/sirupsen/logrus"
 )
 
 func fillRequestStruck(u *url.URL) (models.RequestT, error) {
@@ -17,6 +18,9 @@ func fillRequestStruck(u *url.URL) (models.RequestT, error) {
 	if q.Get("from") != "" {
 		from, err = strconv.ParseInt(q.Get("from"), 10, 64)
 		if err != nil {
+			log.WithFields(log.Fields{
+				"bad_querry_argument" : "from",
+			}).Error("Bad request")
 			return models.RequestT{}, err
 		}
 	}
@@ -24,15 +28,17 @@ func fillRequestStruck(u *url.URL) (models.RequestT, error) {
 	if q.Get("to") != "" {
 		to, err = strconv.ParseInt(q.Get("to"), 10, 64)
 		if err != nil {
+			log.WithFields(log.Fields{
+				"bad_querry_argument" : "to",
+			}).Error("Bad request")
 			return models.RequestT{}, err
 		}
 	}
 
-	request := models.RequestT{}
-
-	request.From = from
-	request.To = to
-	request.Type = q.Get("type")
-
+	request := models.RequestT{
+		From:from,
+		To:to,
+		Type:q.Get("type"),
+	}
 	return request, nil
 }

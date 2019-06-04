@@ -7,12 +7,14 @@ package main
 import (
 	"fmt"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
-	"log"
-	//"net/http"
+	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+
+	//"log"
 	"os"
 	"os/signal"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	firebase "firebase.google.com/go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -25,6 +27,19 @@ const(
 	port = ":10000"
 	path = "serviceAccountKey.json"
 )
+
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	/*f, err := os.OpenFile("log.txt", os.O_WRONLY | os.O_CREATE, 0755)
+	if err != nil {
+		log.SetOutput(os.Stdout)
+	}else{
+		log.SetOutput(f)
+	}*/
+	log.SetOutput(os.Stdout)
+	// Only log the warning severity or above.
+	log.SetLevel(log.WarnLevel)
+}
 
 func main() {
 	opt := option.WithCredentialsFile(path)
@@ -39,21 +54,19 @@ func main() {
 	}
 	defer client.Close()
 
-	/*datAcc := &access.MockAccess{make(map[string][]models.EventT)}
-	svc := apis.NewService(datAcc)*/
-	datAcc := &access.FirestoreAccess{Client: client}
+	datAcc := &access.MockAccess{make(map[string][]models.EventT)}
 	svc := apis.NewService(datAcc)
+	/*datAcc := &access.FirestoreAccess{Client: client}
+	svc := apis.NewService(datAcc)*/
 
 	e := echo.New()
 	// Middleware
-	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	// Routes
 	e.GET("/events", svc.HandleGet)
 	e.POST("/events", svc.HandlePost)
 
 	go func () {
-		if err := e.Start(":10000"); err != nil {
+		if err := e.Start(port); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()
