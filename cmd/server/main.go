@@ -5,27 +5,26 @@ Server binds ports here and listens to incomming connection
 package main
 
 import (
-	"fmt"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 
-	//"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	firebase "firebase.google.com/go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
 
-const(
+const (
 	port = ":10000"
-	path = "serviceAccountKey.json"
+	path = "configs/serviceAccountKey.json"
 )
 
 func init() {
@@ -37,8 +36,7 @@ func init() {
 		log.SetOutput(f)
 	}*/
 	log.SetOutput(os.Stdout)
-	// Only log the warning severity or above.
-	log.SetLevel(log.WarnLevel)
+	log.SetLevel(log.InfoLevel)
 }
 
 func main() {
@@ -65,17 +63,17 @@ func main() {
 	e.GET("/events", svc.HandleGet)
 	e.POST("/events", svc.HandlePost)
 
-	go func () {
+	go func() {
 		if err := e.Start(port); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()
 
-	stop  := make(chan os.Signal, 1)
+	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	<- stop
+	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	if err := e.Shutdown(ctx); err != nil {
 		panic(err)

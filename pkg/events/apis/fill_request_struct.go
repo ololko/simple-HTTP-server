@@ -19,7 +19,8 @@ func fillRequestStruck(u *url.URL) (models.RequestT, error) {
 		from, err = strconv.ParseInt(q.Get("from"), 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"bad_querry_argument" : "from",
+				"method":              "GET",
+				"bad_querry_argument": "from",
 			}).Error("Bad request")
 			return models.RequestT{}, err
 		}
@@ -29,16 +30,17 @@ func fillRequestStruck(u *url.URL) (models.RequestT, error) {
 		to, err = strconv.ParseInt(q.Get("to"), 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"bad_querry_argument" : "to",
+				"method":              "GET",
+				"bad_querry_argument": "to",
 			}).Error("Bad request")
 			return models.RequestT{}, err
 		}
 	}
 
 	request := models.RequestT{
-		From:from,
-		To:to,
-		Type:q.Get("type"),
+		From: from,
+		To:   to,
+		Type: q.Get("type"),
 	}
 	return request, nil
 }

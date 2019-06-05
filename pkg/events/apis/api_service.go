@@ -18,8 +18,6 @@ func NewService(dataAccessor access.DataAccesser) *Service {
 	return &Service{DataAccessor: dataAccessor}
 }
 
-
-
 func (s *Service) HandleGet(c echo.Context) error {
 	request, err := fillRequestStruck(c.Request().URL)
 	if err != nil {
@@ -35,8 +33,8 @@ func (s *Service) HandleGet(c echo.Context) error {
 	}
 
 	log.WithFields(log.Fields{
-		"method": "get",
-		"url"	: c.Request().URL.String(),
+		"method": "GET",
+		"url":    c.Request().URL.String(),
 	}).Info("Sending positive answer to GET request")
 	return c.JSON(http.StatusOK, <-data)
 }
@@ -46,8 +44,8 @@ func (s *Service) HandlePost(c echo.Context) error {
 	err := json.NewDecoder(c.Request().Body).Decode(&newEvent)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"method": "post",
-			"body" : c.Request().Body,
+			"method": "POST",
+			"body":   c.Request().Body,
 		}).Error("Body has bad structure")
 		return echo.NewHTTPError(http.StatusBadRequest, "Preco to nevidim v testoch? A vlastne ziadny error")
 	}
@@ -61,8 +59,8 @@ func (s *Service) HandlePost(c echo.Context) error {
 	}
 
 	log.WithFields(log.Fields{
-		"method": "post",
-		"body"	: c.Request().Body,
+		"method": "POST",
+		"body":   c.Request().Body,
 	}).Info("Sending positive answer to POST request")
 	return c.String(http.StatusCreated, <-returnType)
 }

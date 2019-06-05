@@ -2,9 +2,8 @@ package access
 
 import (
 	"errors"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	log "github.com/sirupsen/logrus"
 )
 
 type MockAccess struct {
@@ -24,22 +23,22 @@ func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.Ans
 
 	var count int64
 	inRange := false
-	for _,event := range d.Events[request.Type]{
+	for _, event := range d.Events[request.Type] {
 		if event.Timestamp >= request.From && event.Timestamp <= request.To {
 			count = count + event.Count
 			inRange = true
 		}
 	}
 
-	if inRange{
+	if inRange {
 		errChan <- nil
-		answer <- models.AnswerT{count,request.Type}
+		answer <- models.AnswerT{count, request.Type}
 		return
-	}else{
+	} else {
 		log.WithFields(log.Fields{
 			"type": request.Type,
 			"from": request.From,
-			"to":	request.To,
+			"to":   request.To,
 		}).Info("Requested event does not exist in range!")
 		errChan <- errors.New("Searched event does not exist in range")
 		answer <- models.AnswerT{}
