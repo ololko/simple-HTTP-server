@@ -35,7 +35,7 @@ func (s *Service) HandleGet(c echo.Context) error {
 	log.WithFields(log.Fields{
 		"method": "GET",
 		"url":    c.Request().URL.String(),
-	}).Info("Sending positive answer to GET request")
+	}).Info("Sending positive answer")
 	return c.JSON(http.StatusOK, <-data)
 }
 
@@ -61,6 +61,6 @@ func (s *Service) HandlePost(c echo.Context) error {
 	log.WithFields(log.Fields{
 		"method": "POST",
 		"body":   c.Request().Body,
-	}).Info("Sending positive answer to POST request")
+	}).Info("Sending positive answer")
 	return c.String(http.StatusCreated, <-returnType)
 }

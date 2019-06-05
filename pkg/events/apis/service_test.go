@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cloud.google.com/go/firestore"
 	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
@@ -17,10 +18,22 @@ import (
 type ApiSuite struct {
 	suite.Suite
 	service *Service
-	client *firestore.Client
+	client  *firestore.Client
 }
 
-const(
+type eventInvalidTimestamp struct {
+	Type      string
+	Count     int
+	Timestamp string
+}
+
+type eventInvalidType struct {
+	Type      bool
+	Count     int
+	Timestamp int
+}
+
+const (
 	path = "../../../configs/serviceAccountKey.json"
 )
 
@@ -103,7 +116,6 @@ func (s *ApiSuite) TestGetValidInputs() {
 			},
 			expectedCode: http.StatusOK,
 		},
-
 	}
 
 	e := echo.New()
@@ -114,16 +126,16 @@ func (s *ApiSuite) TestGetValidInputs() {
 		ctx := e.NewContext(req, rec)
 		h := s.service.HandleGet
 
-		s.Error(h(ctx))
+		s.NoError(h(ctx))
 		var received models.AnswerT
-		s.NoError(json.Unmarshal(rec.Body.Bytes(),&received))
+		s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
 
-		assert.Equal(s.T(), candidate.expectedCode,  rec.Code, "Error in expected code in test number %d",i )
-		assert.Equal(s.T(), candidate.expected, received, "Error in body answer in test number %d",i)
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code, "Error in expected code in test number %d", i)
+		assert.Equal(s.T(), candidate.expected, received, "Error in body answer in test number %d", i)
 	}
 }
 
-func (s *ApiSuite) TestGetBadRequest()  {
+func (s *ApiSuite) TestGetBadRequest() {
 	candidates := []struct {
 		url          string
 		expected     models.AnswerT
@@ -145,7 +157,7 @@ func (s *ApiSuite) TestGetBadRequest()  {
 
 		s.Error(h(ctx))
 
-		assert.Equal(s.T(), candidate.expectedCode,  rec.Code, rec.Body.String())
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code, rec.Body.String())
 	}
 }
 
@@ -160,7 +172,7 @@ func (s *ApiSuite) TestGetNotFound() {
 			expectedCode: http.StatusNotFound,
 		},
 		{
-			url: "/events?type=NoData",
+			url:          "/events?type=NoData",
 			expectedCode: http.StatusNotFound,
 		},
 	}
@@ -179,30 +191,29 @@ func (s *ApiSuite) TestGetNotFound() {
 	}
 }
 
-
-func (s *ApiSuite) TestHandlePost() {
+func (s *ApiSuite) TestPostValidBody() {
 	candidates := []struct {
-		newEvent models.EventT
-		response string
+		newEvent     models.EventT
+		response     string
 		expectedCode int
 	}{
 		{
 			newEvent: models.EventT{
-				Type: "Skuska",
+				Type:      "Skuska",
 				Timestamp: 100,
-				Count: 3,
+				Count:     3,
 			},
-			response: "Skuska",
-			expectedCode:http.StatusCreated,
+			response:     "Skuska",
+			expectedCode: http.StatusCreated,
 		},
 		{
 			newEvent: models.EventT{
-				Type: "Skuska",
+				Type:      "BryndzoveHalusky",
 				Timestamp: 5,
-				Count: 36,
+				Count:     36,
 			},
-			response: "Skuska",
-			expectedCode:http.StatusCreated,
+			response:     "BryndzoveHalusky",
+			expectedCode: http.StatusCreated,
 		},
 	}
 
@@ -211,23 +222,118 @@ func (s *ApiSuite) TestHandlePost() {
 
 	for _, c := range candidates {
 		bb, _ := json.Marshal(c.newEvent)
-		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(bb))
+		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		if assert.NoError(s.T(), h(ctx)) {
-			assert.Equal(s.T(), http.StatusCreated, rec.Code)
-			assert.Equal(s.T(), c.response, rec.Body.String())
-		}
+		s.NoError(h(ctx))
+		assert.Equal(s.T(), http.StatusCreated, rec.Code)
+		assert.Equal(s.T(), c.response, rec.Body.String())
+		fmt.Println(rec.Body) //preco mi tu pekne vypise odpoved, ale v logu mi body vobec nevypisuje?
+	}
+}
+
+func (s *ApiSuite) TestPostInvalidTimestamp() {
+	candidates := []struct {
+		newEvent     eventInvalidTimestamp
+		response     string
+		expectedCode int
+	}{
+		{
+			newEvent: eventInvalidTimestamp{
+				Type:      "Skuska",
+				Timestamp: "100",
+				Count:     3,
+			},
+			response:     "",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			newEvent: eventInvalidTimestamp{
+				Type:      "DacoIne",
+				Timestamp: "10sd5s",
+				Count:     36,
+			},
+			response:     "",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			newEvent: eventInvalidTimestamp{
+				Type:      "ZaseNovyEvent",
+				Timestamp: "96sd",
+				Count:     36,
+			},
+			response:     "",
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	e := echo.New()
+	h := s.service.HandlePost
+
+	for _, c := range candidates {
+		bb, _ := json.Marshal(c.newEvent)
+		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		s.Error(h(ctx))
+		assert.Equal(s.T(), http.StatusBadRequest, rec.Code)
+		assert.Equal(s.T(), c.response, rec.Body.String())
+	}
+}
+
+func (s *ApiSuite) TestPostValidTypeBool() {
+	candidates := []struct {
+		newEvent     eventInvalidType
+		response     string
+		expectedCode int
+	}{
+		{
+			newEvent: eventInvalidType{
+				Type:      true,
+				Timestamp: 100,
+				Count:     3,
+			},
+			response:     "true",
+			expectedCode: http.StatusCreated,
+		},
+		{
+			newEvent: eventInvalidType{
+				Type:      false,
+				Timestamp: 10,
+				Count:     36,
+			},
+			response:     "false",
+			expectedCode: http.StatusCreated,
+		},
+	}
+
+	e := echo.New()
+	h := s.service.HandlePost
+
+	for _, c := range candidates {
+		bb, _ := json.Marshal(c.newEvent)
+		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		s.Error(h(ctx))
+		assert.Equal(s.T(), http.StatusCreated, rec.Code)
+		assert.Equal(s.T(), c.response, rec.Body.String())
+		fmt.Println(c.newEvent)
 	}
 }
 
 func TestApiSuite(t *testing.T) {
 	suite.Run(t, new(ApiSuite))
 }
-
 
 func (s *ApiSuite) TearDownSuite() {
 	//s.NoError(s.client.Close())
