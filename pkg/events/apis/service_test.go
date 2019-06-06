@@ -33,6 +33,7 @@ type eventInvalidType struct {
 	Timestamp int
 }
 
+
 const (
 	path = "../../../configs/serviceAccountKey.json"
 )
@@ -86,6 +87,8 @@ func (s *ApiSuite) SetupTest() {
 	}
 }
 
+
+
 func (s *ApiSuite) TestGetValidInputs() {
 	candidates := []struct {
 		url          string
@@ -120,7 +123,7 @@ func (s *ApiSuite) TestGetValidInputs() {
 
 	e := echo.New()
 
-	for i, candidate := range candidates {
+	for _, candidate := range candidates {
 		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
@@ -130,19 +133,23 @@ func (s *ApiSuite) TestGetValidInputs() {
 		var received models.AnswerT
 		s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
 
-		assert.Equal(s.T(), candidate.expectedCode, rec.Code, "Error in expected code in test number %d", i)
-		assert.Equal(s.T(), candidate.expected, received, "Error in body answer in test number %d", i)
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code)
+		assert.Equal(s.T(), candidate.expected, received)
 	}
 }
 
 func (s *ApiSuite) TestGetBadRequest() {
 	candidates := []struct {
 		url          string
-		expected     models.AnswerT
+		expected     string
 		expectedCode int
 	}{
 		{
 			url:          "/events?type=Skuska&from=3&to=75fdg",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			url:          "/events?type=Skuska&from=t&to=",
 			expectedCode: http.StatusBadRequest,
 		},
 	}
@@ -155,16 +162,17 @@ func (s *ApiSuite) TestGetBadRequest() {
 		ctx := e.NewContext(req, rec)
 		h := s.service.HandleGet
 
-		s.Error(h(ctx))
+		s.NoError(h(ctx))
 
-		assert.Equal(s.T(), candidate.expectedCode, rec.Code, rec.Body.String())
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code)
+		assert.Equal(s.T(), candidate.expected, rec.Body.String())
 	}
 }
 
 func (s *ApiSuite) TestGetNotFound() {
 	candidates := []struct {
 		url          string
-		expected     models.AnswerT
+		expected     string
 		expectedCode int
 	}{
 		{
@@ -173,6 +181,10 @@ func (s *ApiSuite) TestGetNotFound() {
 		},
 		{
 			url:          "/events?type=NoData",
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			url: "/events?type=Skuska&from=7&to=3",
 			expectedCode: http.StatusNotFound,
 		},
 	}
@@ -185,9 +197,10 @@ func (s *ApiSuite) TestGetNotFound() {
 		ctx := e.NewContext(req, rec)
 		h := s.service.HandleGet
 
-		s.Error(h(ctx))
+		s.NoError(h(ctx))
 
 		assert.Equal(s.T(), candidate.expectedCode, rec.Code, "Error in expected code in test number %d", i)
+		assert.Equal(s.T(), candidate.expected, rec.Body.String())
 	}
 }
 
@@ -229,9 +242,11 @@ func (s *ApiSuite) TestPostValidBody() {
 		ctx := e.NewContext(req, rec)
 
 		s.NoError(h(ctx))
-		assert.Equal(s.T(), http.StatusCreated, rec.Code)
-		assert.Equal(s.T(), c.response, rec.Body.String())
-		fmt.Println(rec.Body) //preco mi tu pekne vypise odpoved, ale v logu mi body vobec nevypisuje?
+		var received string
+		s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
+
+		assert.Equal(s.T(), c.expectedCode, rec.Code)
+		assert.Equal(s.T(), c.response, received)
 	}
 }
 
@@ -281,13 +296,13 @@ func (s *ApiSuite) TestPostInvalidTimestamp() {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		s.Error(h(ctx))
+		s.NoError(h(ctx))
 		assert.Equal(s.T(), http.StatusBadRequest, rec.Code)
 		assert.Equal(s.T(), c.response, rec.Body.String())
 	}
 }
 
-func (s *ApiSuite) TestPostValidTypeBool() {
+func (s *ApiSuite) TestPostInValidTypeBool() {
 	candidates := []struct {
 		newEvent     eventInvalidType
 		response     string
@@ -299,8 +314,8 @@ func (s *ApiSuite) TestPostValidTypeBool() {
 				Timestamp: 100,
 				Count:     3,
 			},
-			response:     "true",
-			expectedCode: http.StatusCreated,
+			response:     "",
+			expectedCode: http.StatusBadRequest,
 		},
 		{
 			newEvent: eventInvalidType{
@@ -308,8 +323,8 @@ func (s *ApiSuite) TestPostValidTypeBool() {
 				Timestamp: 10,
 				Count:     36,
 			},
-			response:     "false",
-			expectedCode: http.StatusCreated,
+			response:     "",
+			expectedCode: http.StatusBadRequest,
 		},
 	}
 
@@ -324,8 +339,8 @@ func (s *ApiSuite) TestPostValidTypeBool() {
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 
-		s.Error(h(ctx))
-		assert.Equal(s.T(), http.StatusCreated, rec.Code)
+		s.NoError(h(ctx))
+		assert.Equal(s.T(), c.expectedCode, rec.Code)
 		assert.Equal(s.T(), c.response, rec.Body.String())
 		fmt.Println(c.newEvent)
 	}

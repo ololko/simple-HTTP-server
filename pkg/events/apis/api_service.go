@@ -11,17 +11,17 @@ import (
 )
 
 type Service struct {
-	DataAccessor access.DataAccesser
+	DataAccessor access.DataAccessor
 }
 
-func NewService(dataAccessor access.DataAccesser) *Service {
+func NewService(dataAccessor access.DataAccessor) *Service {
 	return &Service{DataAccessor: dataAccessor}
 }
 
 func (s *Service) HandleGet(c echo.Context) error {
 	request, err := fillRequestStruck(c.Request().URL)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Preco to nevidim v testoch? A vlastne ziadny error")
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	data := make(chan models.AnswerT, 1)
@@ -29,7 +29,7 @@ func (s *Service) HandleGet(c echo.Context) error {
 
 	go s.DataAccessor.ReadEvent(request, data, errChan)
 	if <-errChan != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "Preco to nevidim v testoch? A vlastne ziadny error")
+		return c.NoContent(http.StatusNotFound)
 	}
 
 	log.WithFields(log.Fields{
@@ -47,20 +47,19 @@ func (s *Service) HandlePost(c echo.Context) error {
 			"method": "POST",
 			"body":   c.Request().Body,
 		}).Error("Body has bad structure")
-		return echo.NewHTTPError(http.StatusBadRequest, "Preco to nevidim v testoch? A vlastne ziadny error")
+		return c.NoContent(http.StatusBadRequest)
 	}
 
-	returnType := make(chan string)
 	chanErr := make(chan error)
 
-	go s.DataAccessor.WriteEvent(newEvent, returnType, chanErr)
+	go s.DataAccessor.WriteEvent(newEvent, chanErr)
 	if err = <-chanErr; err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Preco to nevidim v testoch? A vlastne ziadny error")
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	log.WithFields(log.Fields{
 		"method": "POST",
 		"body":   c.Request().Body,
 	}).Info("Sending positive answer")
-	return c.String(http.StatusCreated, <-returnType)
+	return c.JSON(http.StatusCreated, newEvent.Type)
 }

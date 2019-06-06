@@ -61,17 +61,16 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 	return
 }
 
-func (d *FirestoreAccess) WriteEvent(insert models.EventT, answer chan<- string, errChan chan<- error) {
+func (d *FirestoreAccess) WriteEvent(insert models.EventT, errChan chan<- error) {
 	_, _, err := d.Client.Collection("users").Add(context.Background(), insert)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"type": insert.Type,
 		}).Error("Unexpected error while creating new event in database")
 		errChan <- err
-		answer <- ""
 		return
 	}
+
 	errChan <- nil
-	answer <- insert.Type
 	return
 }

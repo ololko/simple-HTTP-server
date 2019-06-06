@@ -6,12 +6,13 @@ package main
 
 import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
-	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	//"github.com/ololko/simple-HTTP-server/pkg/events/models"
 
 	"fmt"
 	"os"
 	"os/signal"
 	"time"
+	"database/sql"
 
 	firebase "firebase.google.com/go"
 	"github.com/labstack/echo"
@@ -20,39 +21,54 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
+	_ "github.com/lib/pq"
 )
 
 const (
-	port = ":10000"
-	path = "configs/serviceAccountKey.json"
+	serverPort          = ":10000"
+	firestoreAccountKey = "configs/serviceAccountKey.json"
+	host                = "localhost"
+	portdb              = 5432
+	user                = "postgres"
+	dbname              = "simple-http-server"
 )
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
-	/*f, err := os.OpenFile("log.txt", os.O_WRONLY | os.O_CREATE, 0755)
-	if err != nil {
-		log.SetOutput(os.Stdout)
-	}else{
-		log.SetOutput(f)
-	}*/
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 }
 
 func main() {
-	opt := option.WithCredentialsFile(path)
+	//psql database connection
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, portdb, user, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	//firestore database connection
+	opt := option.WithCredentialsFile(firestoreAccountKey)
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	client, err := app.Firestore(context.Background())
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 	defer client.Close()
 
-	datAcc := &access.MockAccess{make(map[string][]models.EventT)}
+
+
+	/*datAcc := &access.MockAccess{make(map[string][]models.EventT)}
+	svc := apis.NewService(datAcc)*/
+	datAcc := &access.PostgreAccess{Client:db}
 	svc := apis.NewService(datAcc)
 	/*datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)*/
@@ -64,7 +80,7 @@ func main() {
 	e.POST("/events", svc.HandlePost)
 
 	go func() {
-		if err := e.Start(port); err != nil {
+		if err := e.Start(serverPort); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()

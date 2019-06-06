@@ -46,10 +46,9 @@ func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.Ans
 	}
 }
 
-func (d *MockAccess) WriteEvent(newEvent models.EventT, answer chan<- string, errChan chan<- error) {
+func (d *MockAccess) WriteEvent(newEvent models.EventT, errChan chan<- error) {
 	d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
 
 	errChan <- nil
-	answer <- newEvent.Type
 	return
 }
