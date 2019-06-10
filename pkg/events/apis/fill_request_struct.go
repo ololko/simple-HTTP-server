@@ -11,8 +11,8 @@ import (
 
 func fillRequestStruck(u *url.URL) (models.RequestT, error) {
 	q := u.Query()
-	var to int64 = math.MaxInt64
-	var from int64 = math.MinInt64
+	var to int64 = math.MaxInt32
+	var from int64 = math.MinInt32
 	var err error
 
 	if q.Get("from") != "" {

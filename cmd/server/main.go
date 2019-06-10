@@ -6,32 +6,47 @@ package main
 
 import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
-	//"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	"github.com/ololko/simple-HTTP-server/pkg/events/models"
 
 	"fmt"
 	"os"
 	"os/signal"
 	"time"
-	"database/sql"
 
 	firebase "firebase.google.com/go"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	_ "github.com/lib/pq"
 	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
-	_ "github.com/lib/pq"
 )
 
-const (
-	serverPort          = ":10000"
-	firestoreAccountKey = "configs/serviceAccountKey.json"
-	host                = "localhost"
-	portdb              = 5432
-	user                = "postgres"
-	dbname              = "simple-http-server"
-)
+func defaultViperVal() {
+	viper.SetDefault("serverPort", ":10000")
+	viper.SetDefault("firestoreAccountKey", "configs/serviceAccountKey.json")
+	viper.SetDefault("host", "localhost")
+	viper.SetDefault("dbPort", 5432)
+	viper.SetDefault("user", "postgres")
+	viper.SetDefault("dbname", "simple-http-server")
+}
+
+func readConfig(filename string) error {
+	defaultViperVal()
+	//viper.AutomaticEnv()
+	viper.AddConfigPath("./configs/")
+	viper.SetConfigName(filename)
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		return err
+	}
+	fmt.Println(viper.GetString("serverPort"))
+	return nil
+}
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -40,20 +55,29 @@ func init() {
 }
 
 func main() {
+	err := readConfig("viperConfig")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	//psql database connection
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, portdb, user, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", viper.GetString("host"), viper.GetInt("dbPort"), viper.GetString("user"), viper.GetString("dbname"))
+	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
-	err = db.Ping()
+	err = db.DB().Ping()
 	if err != nil {
 		panic(err)
 	}
 
+	//db.DropTableIfExists(&models.EventT{})
+	db.AutoMigrate(&models.EventT{})
+
 	//firestore database connection
-	opt := option.WithCredentialsFile(firestoreAccountKey)
+	opt := option.WithCredentialsFile(viper.GetString("firestoreAccountKey"))
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		log.Fatalln(err)
@@ -64,11 +88,9 @@ func main() {
 	}
 	defer client.Close()
 
-
-
 	/*datAcc := &access.MockAccess{make(map[string][]models.EventT)}
 	svc := apis.NewService(datAcc)*/
-	datAcc := &access.PostgreAccess{Client:db}
+	datAcc := &access.PostgreAccess{Client: db}
 	svc := apis.NewService(datAcc)
 	/*datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)*/
@@ -80,7 +102,7 @@ func main() {
 	e.POST("/events", svc.HandlePost)
 
 	go func() {
-		if err := e.Start(serverPort); err != nil {
+		if err := e.Start(viper.GetString("serverPort")); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()
