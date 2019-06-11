@@ -5,9 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	myViper "github.com/ololko/simple-HTTP-server/pkg/viper"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"net/http"
@@ -34,29 +37,25 @@ type eventInvalidType struct {
 	Timestamp int
 }
 
-const (
-	path                = "../../../configs/serviceAccountKey.json"
-	serverPort          = ":10000"
-	firestoreAccountKey = "configs/serviceAccountKey.json"
-	host                = "localhost"
-	portdb              = 5432
-	user                = "postgres"
-	dbname              = "simple-http-server"
-)
-
 func (s *ApiSuite) SetupSuite() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, portdb, user, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
+	err := myViper.ReadConfig("viperConfig", "../../../configs/")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", viper.GetString("host"), viper.GetInt("dbPort"), viper.GetString("user"), viper.GetString("dbname"))
+	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	err = db.Ping()
+	err = db.DB().Ping()
 	if err != nil {
 		panic(err)
 	}
+	//db.DropTableIfExists(&models.EventT{})
+	db.AutoMigrate(&models.EventT{})
 	datAcc := &access.PostgreAccess{Client: db}
 	s.service = NewService(datAcc)
-	s.client = db
 
 	//mockDB
 	//s.service = NewService(&access.MockAccess{})
@@ -80,7 +79,7 @@ func (s *ApiSuite) SetupSuite() {
 
 func (s *ApiSuite) SetupTest() {
 	// add new data to database
-	/*s.service.DataAccessor = &access.MockAccess{
+	s.service.DataAccessor = &access.MockAccess{
 		Events: map[string][]models.EventT{
 			"Skuska": {
 				{
@@ -105,10 +104,10 @@ func (s *ApiSuite) SetupTest() {
 				},
 			},
 		},
-	}*/
+	}
 }
 
-func (s *ApiSuite) TestGetValidInputs() {
+func (s *ApiSuite) TestGet() {
 	candidates := []struct {
 		url          string
 		expected     models.AnswerT
@@ -138,31 +137,6 @@ func (s *ApiSuite) TestGetValidInputs() {
 			},
 			expectedCode: http.StatusOK,
 		},
-	}
-
-	e := echo.New()
-
-	for _, candidate := range candidates {
-		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-		h := s.service.HandleGet
-
-		s.NoError(h(ctx))
-		var received models.AnswerT
-		s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
-
-		//assert.Equal(s.T(), candidate.expectedCode, rec.Code)
-		//assert.Equal(s.T(), candidate.expected, received)
-	}
-}
-
-func (s *ApiSuite) TestGetBadRequest() {
-	candidates := []struct {
-		url          string
-		expected     string
-		expectedCode int
-	}{
 		{
 			url:          "/events?type=Skuska&from=3&to=75fdg",
 			expectedCode: http.StatusBadRequest,
@@ -171,29 +145,6 @@ func (s *ApiSuite) TestGetBadRequest() {
 			url:          "/events?type=Skuska&from=t&to=",
 			expectedCode: http.StatusBadRequest,
 		},
-	}
-
-	e := echo.New()
-
-	for _, candidate := range candidates {
-		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-		h := s.service.HandleGet
-
-		s.NoError(h(ctx))
-
-		assert.Equal(s.T(), candidate.expectedCode, rec.Code)
-		assert.Equal(s.T(), candidate.expected, rec.Body.String())
-	}
-}
-
-func (s *ApiSuite) TestGetNotFound() {
-	candidates := []struct {
-		url          string
-		expected     string
-		expectedCode int
-	}{
 		{
 			url:          "/events?type=NoData&from=3",
 			expectedCode: http.StatusNotFound,
@@ -210,22 +161,26 @@ func (s *ApiSuite) TestGetNotFound() {
 
 	e := echo.New()
 
-	for i, candidate := range candidates {
+	for _, candidate := range candidates {
 		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
 		h := s.service.HandleGet
 
 		s.NoError(h(ctx))
+		var received models.AnswerT
+		if rec.Code == 200 {
+			s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
+		}
 
-		assert.Equal(s.T(), candidate.expectedCode, rec.Code, "Error in expected code in test number %d", i)
-		assert.Equal(s.T(), candidate.expected, rec.Body.String())
+		assert.Equal(s.T(), candidate.expectedCode, rec.Code)
+		assert.Equal(s.T(), candidate.expected, received)
 	}
 }
 
-func (s *ApiSuite) TestPostValidBody() {
+func (s *ApiSuite) TestPost() {
 	candidates := []struct {
-		newEvent     models.EventT
+		newEvent     interface{}
 		response     string
 		expectedCode int
 	}{
@@ -247,34 +202,6 @@ func (s *ApiSuite) TestPostValidBody() {
 			response:     "BryndzoveHalusky",
 			expectedCode: http.StatusCreated,
 		},
-	}
-
-	e := echo.New()
-	h := s.service.HandlePost
-
-	for _, c := range candidates {
-		bb, _ := json.Marshal(c.newEvent)
-		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-
-		s.NoError(h(ctx))
-		var received string
-		s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
-
-		assert.Equal(s.T(), c.expectedCode, rec.Code)
-		assert.Equal(s.T(), c.response, received)
-	}
-}
-
-func (s *ApiSuite) TestPostInvalidTimestamp() {
-	candidates := []struct {
-		newEvent     eventInvalidTimestamp
-		response     string
-		expectedCode int
-	}{
 		{
 			newEvent: eventInvalidTimestamp{
 				Type:      "Skuska",
@@ -302,31 +229,6 @@ func (s *ApiSuite) TestPostInvalidTimestamp() {
 			response:     "",
 			expectedCode: http.StatusBadRequest,
 		},
-	}
-
-	e := echo.New()
-	h := s.service.HandlePost
-
-	for _, c := range candidates {
-		bb, _ := json.Marshal(c.newEvent)
-		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-
-		s.NoError(h(ctx))
-		assert.Equal(s.T(), http.StatusBadRequest, rec.Code)
-		assert.Equal(s.T(), c.response, rec.Body.String())
-	}
-}
-
-func (s *ApiSuite) TestPostInValidTypeBool() {
-	candidates := []struct {
-		newEvent     eventInvalidType
-		response     string
-		expectedCode int
-	}{
 		{
 			newEvent: eventInvalidType{
 				Type:      true,
@@ -359,9 +261,12 @@ func (s *ApiSuite) TestPostInValidTypeBool() {
 		ctx := e.NewContext(req, rec)
 
 		s.NoError(h(ctx))
+		var received string
+		if rec.Code == 201 {
+			s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
+		}
 		assert.Equal(s.T(), c.expectedCode, rec.Code)
-		assert.Equal(s.T(), c.response, rec.Body.String())
-		fmt.Println(c.newEvent)
+		assert.Equal(s.T(), c.response, received)
 	}
 }
 
@@ -370,5 +275,5 @@ func TestApiSuite(t *testing.T) {
 }
 
 func (s *ApiSuite) TearDownSuite() {
-	s.NoError(s.client.Close())
+	//s.NoError(s.client.Close())
 }

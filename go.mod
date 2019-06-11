@@ -3,7 +3,7 @@ module github.com/ololko/simple-HTTP-server
 go 1.12
 
 require (
-	cloud.google.com/go v0.39.0
+	cloud.google.com/go v0.40.0
 	firebase.google.com/go v3.7.0+incompatible
 	github.com/jinzhu/gorm v1.9.8
 	github.com/labstack/echo v3.3.10+incompatible
@@ -14,7 +14,11 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
 	github.com/valyala/fasttemplate v1.0.1 // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
-	golang.org/x/oauth2 v0.0.0-20190523182746-aaccbc9213b0 // indirect
-	google.golang.org/api v0.5.0
+	go.opencensus.io v0.22.0 // indirect
+	golang.org/x/net v0.0.0-20190607181551-461777fb6f67
+	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae // indirect
+	google.golang.org/api v0.6.0
+	google.golang.org/appengine v1.6.1 // indirect
+	google.golang.org/genproto v0.0.0-20190605220351-eb0b1bdb6ae6 // indirect
+	google.golang.org/grpc v1.21.1 // indirect
 )

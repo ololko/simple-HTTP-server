@@ -7,6 +7,7 @@ package main
 import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	myViper "github.com/ololko/simple-HTTP-server/pkg/viper"
 
 	"fmt"
 	"os"
@@ -26,28 +27,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-func defaultViperVal() {
-	viper.SetDefault("serverPort", ":10000")
-	viper.SetDefault("firestoreAccountKey", "configs/serviceAccountKey.json")
-	viper.SetDefault("host", "localhost")
-	viper.SetDefault("dbPort", 5432)
-	viper.SetDefault("user", "postgres")
-	viper.SetDefault("dbname", "simple-http-server")
-}
-
-func readConfig(filename string) error {
-	defaultViperVal()
-	//viper.AutomaticEnv()
-	viper.AddConfigPath("./configs/")
-	viper.SetConfigName(filename)
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		return err
-	}
-	fmt.Println(viper.GetString("serverPort"))
-	return nil
-}
-
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
@@ -55,7 +34,7 @@ func init() {
 }
 
 func main() {
-	err := readConfig("viperConfig")
+	err := myViper.ReadConfig("viperConfig", "./configs/")
 	if err != nil {
 		fmt.Println(err)
 		return

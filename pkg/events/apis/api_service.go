@@ -1,7 +1,6 @@
 package apis
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -41,7 +40,7 @@ func (s *Service) HandleGet(c echo.Context) error {
 
 func (s *Service) HandlePost(c echo.Context) error {
 	var newEvent models.EventT
-	err := json.NewDecoder(c.Request().Body).Decode(&newEvent)
+	err := c.Bind(&newEvent)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"method": "POST",
