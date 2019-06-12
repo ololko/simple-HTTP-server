@@ -74,6 +74,11 @@ func main() {
 	/*datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)*/
 
+
+
+
+
+
 	e := echo.New()
 	// Middleware
 	e.Use(middleware.Recover())
@@ -82,7 +87,7 @@ func main() {
 
 	go func() {
 		if err := e.Start(viper.GetString("serverPort")); err != nil {
-			e.Logger.Info("shutting down the server")
+			e.Logger.Info("FAIL IN BINDING PORT")
 		}
 	}()
 

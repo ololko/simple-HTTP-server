@@ -14,8 +14,8 @@ type PostgreAccess struct {
 	Client *gorm.DB
 }
 
-func (d *PostgreAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, chanErr chan<- error) {
-	var events []models.EventT
+func (d *PostgreAccess) ReadEvent(request models.Request, answer chan<- int32, chanErr chan<- error) {
+	var events []models.DatabaseElement
 	err := d.Client.Where("type=? AND timestamp>=? AND timestamp<=?", request.Type, request.From, request.To).Find(&events).Error
 	if err != nil {
 		chanErr <- err
@@ -37,17 +37,19 @@ func (d *PostgreAccess) ReadEvent(request models.RequestT, answer chan<- models.
 		return
 	}
 
-	var count int64
+	var count int32
 	for _, event := range events {
-		count += int64(event.Count)
+		count += event.Count
 	}
 	chanErr <- nil
-	answer <- models.AnswerT{Type: request.Type, Count: count}
+	answer <- count
 }
 
-func (d *PostgreAccess) WriteEvent(insert models.EventT, chanErr chan<- error) {
+//TIEZ UPRAV
+
+/*func (d *PostgreAccess) WriteEvent(insert models.EventT, chanErr chan<- error) {
 	d.Client.NewRecord(insert)
 	d.Client.Create(&insert)
 	chanErr <- nil
 	return
-}
+}*/

@@ -1,0 +1,41 @@
+syntax="proto3";
+
+package models;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+service Events {
+    rpc ReadEvent (Request) returns(Answer){
+        option (google.api.http) ={
+            get: "/events"
+        };
+    }
+    rpc CreateEvent (Event) returns(google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/events"
+            body: "*"
+        };
+    }
+}
+
+message Event{
+	int32 count = 1;
+	string type = 2;
+	int32 timestamp = 3;
+}
+
+message Request {
+	int32 from = 1;
+	int32 to = 2;
+	string type = 3;
+}
+
+message Answer {
+	int32 count = 1;
+	string type = 2;
+}
+
+message Empty {
+
+}

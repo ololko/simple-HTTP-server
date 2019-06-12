@@ -5,6 +5,6 @@ import (
 )
 
 type DataAccessor interface{
-    ReadEvent(models.RequestT, chan<- models.AnswerT, chan<- error)
-    WriteEvent(models.EventT, chan<- error)
+    ReadEvent(models.Request, chan<- int32, chan<- error)
+    WriteEvent(models.Event, chan<- error)
 }
