@@ -12,24 +12,20 @@ import (
 )
 
 type Service struct {
-	DataAccessor access.MockAccess
+	DataAccessor access.DataAccessor
 }
 
 func NewService(dataAccessor access.DataAccessor) *Service {
-	return &Service{DataAccessor: access.MockAccess{}}
+	return &Service{DataAccessor: dataAccessor}
 }
 
 func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*models.Answer, error) {
-	/////////////////////////////////////
-	//request by mal byt naplneny uz sam pekne ako treba
-	/////////////////////////////////////
-
 	data := make(chan int32, 1)
 	errChan := make(chan error, 1)
 
 	go s.DataAccessor.ReadEvent(*request, data, errChan)
 	if <-errChan != nil {
-		return nil,status.Errorf(http.StatusNotFound, "Not found")
+		return nil, status.Errorf(http.StatusNotFound, "Not found")
 	}
 
 	log.WithFields(log.Fields{
@@ -37,16 +33,16 @@ func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*mode
 		//"url":    c.Request().URL.String(),		//ako sem kurna hodim url?
 	}).Info("Sending positive answer")
 	return &models.Answer{
-		Type: request.Type,
+		Type:  request.Type,
 		Count: <-data,
 	}, nil
 }
 
-
 //Vyries nacitanie z JSON
-func (s *Service) CreateEvent(ctx context.Context, insert *models.Event) (*empty.Empty, error){
+func (s *Service) CreateEvent(ctx context.Context, insert *models.Event) (*empty.Empty, error) {
 	return &empty.Empty{}, nil
 }
+
 /*
 func (s *Service) HandlePost(ctx context.Context) (*empty.Empty, error) {
 	//var newEvent models.EventT

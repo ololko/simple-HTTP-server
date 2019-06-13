@@ -6,13 +6,12 @@ package main
 
 import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
-	//"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
 	gw "github.com/ololko/simple-HTTP-server/pkg/events/models"
+	GrpcServer "github.com/ololko/simple-HTTP-server/pkg/grpc"
+	HttpServer "github.com/ololko/simple-HTTP-server/pkg/http"
 	myViper "github.com/ololko/simple-HTTP-server/pkg/viper"
-	"net"
 
-	"flag"
 	"fmt"
 	"os"
 
@@ -24,11 +23,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-)
-
-var (
-	echoEndpoint = flag.String("echo_endpoint", "localhost:9090", "endpoint of YourService")
 )
 
 func init() {
@@ -72,11 +66,12 @@ func main() {
 	defer client.Close()
 
 	datAcc := access.MockAccess{map[string][]gw.DatabaseElement{
-		"Daco":{
-			gw.DatabaseElement{Type:"Daco",Count:55,Timestamp:55},
+		"Daco": {
+			gw.DatabaseElement{Type: "Daco", Count: 55, Timestamp: 55},
 		},
 	}}
-	//svc := apis.NewService(datAcc)
+
+	svc := apis.NewService(&datAcc)
 
 	//datAcc := &access.PostgreAccess{Client: db}
 	//svc := apis.NewService(datAcc)
@@ -84,30 +79,17 @@ func main() {
 	/*datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)*/
 
-	flag.Parse()
-	lis, err := net.Listen("tcp", viper.GetString("serverPort"))
+	ctx := context.Background()
+	// run HTTP gateway
+	go func() {
+		err = HttpServer.RunServerHTTP(ctx, viper.GetString("grpcPort"), viper.GetString("serverPort"))
+		if err != nil {
+			fmt.Println("Failed to start HTTP server: %v", err)
+		}
+	}()
+
+	err = GrpcServer.RunGrpcServer(ctx, svc, viper.GetString("grpcPort"))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	grpcServer := grpc.NewServer()
-	gw.RegisterEventsServer(grpcServer, &apis.Service{datAcc})
-	err = grpcServer.Serve(lis)
-	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error creating GRPC server")
 	}
 }
-
-/*func run() error {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := gw.RegisterEventsHandlerFromEndpoint(ctx, mux, *echoEndpoint, opts)
-	if err != nil {
-		return err
-	}
-
-	return http.ListenAndServe(viper.GetString("serverPort"), mux)
-}*/
