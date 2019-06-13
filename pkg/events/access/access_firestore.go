@@ -7,13 +7,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+	"math"
 )
 
 type FirestoreAccess struct {
 	Client *firestore.Client
 }
 
-func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, chanErr chan<- error) {
+func (d *FirestoreAccess) ReadEvent(request models.Request, answer chan<- int32, chanErr chan<- error) {
 	var count int64
 	elementExists := false
 	iter := d.Client.Collection("users").Where("Type", "==", request.Type).Where("Timestamp", ">=", request.From).Where("Timestamp", "<=", request.To).Documents(context.Background())
@@ -29,7 +30,7 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 					"from": request.From,
 					"to":	request.To,
 				}).Info("Requested event does not exist in range!")
-				answer <- models.AnswerT{}
+				answer <- 0
 				chanErr <- errors.New("Element is not in database")
 				return
 			}
@@ -38,7 +39,7 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 			log.WithFields(log.Fields{
 				"type": request.Type,
 			}).Error("Unexpected error with firestore while reading")
-			answer <- models.AnswerT{}
+			answer <- 0
 			chanErr <- err
 			return
 		}
@@ -49,20 +50,24 @@ func (d *FirestoreAccess) ReadEvent(request models.RequestT, answer chan<- model
 			log.WithFields(log.Fields{
 				"type": request.Type,
 			}).Error("Unexpected error. Database is incosistent in COUNT field!")
-			answer <- models.AnswerT{}
+			answer <- 0
 			chanErr <- err
 			return
 		}
 		elementExists = true
 	}
 
-	answer <- models.AnswerT{Count:count, Type:request.Type}
+	if count > math.MaxInt32{
+		count = math.MaxInt32
+	}
+	answer <- int32(count)
 	chanErr <- nil
 	return
 }
 
-func (d *FirestoreAccess) WriteEvent(insert models.EventT, errChan chan<- error) {
-	_, _, err := d.Client.Collection("users").Add(context.Background(), insert)
+func (d *FirestoreAccess) WriteEvent(insert models.Event, errChan chan<- error) {
+	panic("implement me")
+/*		_, _, err := d.Client.Collection("users").Add(context.Background(), insert)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"type": insert.Type,
@@ -72,5 +77,5 @@ func (d *FirestoreAccess) WriteEvent(insert models.EventT, errChan chan<- error)
 	}
 
 	errChan <- nil
-	return
+	return*/
 }

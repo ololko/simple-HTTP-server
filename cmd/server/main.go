@@ -6,25 +6,29 @@ package main
 
 import (
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
-	"github.com/ololko/simple-HTTP-server/pkg/events/models"
+	//"github.com/ololko/simple-HTTP-server/pkg/events/access"
+	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
+	gw "github.com/ololko/simple-HTTP-server/pkg/events/models"
 	myViper "github.com/ololko/simple-HTTP-server/pkg/viper"
+	"net"
 
+	"flag"
 	"fmt"
 	"os"
-	"os/signal"
-	"time"
 
 	firebase "firebase.google.com/go"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 	_ "github.com/lib/pq"
-	"github.com/ololko/simple-HTTP-server/pkg/events/apis"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+)
+
+var (
+	echoEndpoint = flag.String("echo_endpoint", "localhost:9090", "endpoint of YourService")
 )
 
 func init() {
@@ -47,13 +51,13 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	err = db.DB().Ping()
 	if err != nil {
+		err = db.DB().Ping()
 		panic(err)
 	}
 
-	//db.DropTableIfExists(&models.EventT{})
-	db.AutoMigrate(&models.EventT{})
+	//db.DropTableIfExists(&gw.EventT{})
+	db.AutoMigrate(&gw.DatabaseElement{})
 
 	//firestore database connection
 	opt := option.WithCredentialsFile(viper.GetString("firestoreAccountKey"))
@@ -67,37 +71,43 @@ func main() {
 	}
 	defer client.Close()
 
-	/*datAcc := &access.MockAccess{make(map[string][]models.EventT)}
-	svc := apis.NewService(datAcc)*/
-	datAcc := &access.PostgreAccess{Client: db}
-	svc := apis.NewService(datAcc)
+	datAcc := access.MockAccess{map[string][]gw.DatabaseElement{
+		"Daco":{
+			gw.DatabaseElement{Type:"Daco",Count:55,Timestamp:55},
+		},
+	}}
+	//svc := apis.NewService(datAcc)
+
+	//datAcc := &access.PostgreAccess{Client: db}
+	//svc := apis.NewService(datAcc)
+
 	/*datAcc := &access.FirestoreAccess{Client: client}
 	svc := apis.NewService(datAcc)*/
 
-
-
-
-
-
-	e := echo.New()
-	// Middleware
-	e.Use(middleware.Recover())
-	e.GET("/events", svc.HandleGet)
-	e.POST("/events", svc.HandlePost)
-
-	go func() {
-		if err := e.Start(viper.GetString("serverPort")); err != nil {
-			e.Logger.Info("FAIL IN BINDING PORT")
-		}
-	}()
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	<-stop
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	if err := e.Shutdown(ctx); err != nil {
-		panic(err)
+	flag.Parse()
+	lis, err := net.Listen("tcp", viper.GetString("serverPort"))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	grpcServer := grpc.NewServer()
+	gw.RegisterEventsServer(grpcServer, &apis.Service{datAcc})
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
+
+/*func run() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	err := gw.RegisterEventsHandlerFromEndpoint(ctx, mux, *echoEndpoint, opts)
+	if err != nil {
+		return err
+	}
+
+	return http.ListenAndServe(viper.GetString("serverPort"), mux)
+}*/

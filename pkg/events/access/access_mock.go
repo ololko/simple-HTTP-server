@@ -7,21 +7,21 @@ import (
 )
 
 type MockAccess struct {
-	Events map[string][]models.EventT
+	Events map[string][]models.DatabaseElement
 }
 
-func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.AnswerT, errChan chan<- error) {
+func (d *MockAccess) ReadEvent(request models.Request, answer chan<- int32, errChan chan<- error) {
 	_, exists := d.Events[request.Type]
 	if !exists {
 		log.WithFields(log.Fields{
 			"type": request.Type,
 		}).Info("Requested event does not exist!")
 		errChan <- errors.New("Searched event does not exist")
-		answer <- models.AnswerT{}
+		answer <- 0
 		return
 	}
 
-	var count int64
+	var count int32
 	inRange := false
 	for _, event := range d.Events[request.Type] {
 		if event.Timestamp >= request.From && event.Timestamp <= request.To {
@@ -32,7 +32,7 @@ func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.Ans
 
 	if inRange {
 		errChan <- nil
-		answer <- models.AnswerT{count, request.Type}
+		answer <- count
 		return
 	} else {
 		log.WithFields(log.Fields{
@@ -41,14 +41,15 @@ func (d *MockAccess) ReadEvent(request models.RequestT, answer chan<- models.Ans
 			"to":   request.To,
 		}).Info("Requested event does not exist in range!")
 		errChan <- errors.New("Searched event does not exist in range")
-		answer <- models.AnswerT{}
+		answer <- 0
 		return
 	}
 }
 
-func (d *MockAccess) WriteEvent(newEvent models.EventT, errChan chan<- error) {
-	d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
+func (d *MockAccess) WriteEvent(newEvent models.Event, errChan chan<- error) {
+	panic("implement me")
+	/*d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
 
 	errChan <- nil
-	return
+	return*/
 }

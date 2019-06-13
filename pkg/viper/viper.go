@@ -5,7 +5,7 @@ import(
 )
 
 func defaultViperVal() {
-	viper.SetDefault("serverPort", ":10000")
+	viper.SetDefault("serverPort", ":50000")
 	viper.SetDefault("firestoreAccountKey", "configs/serviceAccountKey.json")
 	viper.SetDefault("host", "localhost")
 	viper.SetDefault("dbPort", 5432)

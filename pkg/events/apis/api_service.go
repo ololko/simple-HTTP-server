@@ -12,21 +12,17 @@ import (
 )
 
 type Service struct {
-	DataAccessor access.DataAccessor
+	DataAccessor access.MockAccess
 }
 
 func NewService(dataAccessor access.DataAccessor) *Service {
-	return &Service{DataAccessor: dataAccessor}
+	return &Service{DataAccessor: access.MockAccess{}}
 }
 
 func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*models.Answer, error) {
 	/////////////////////////////////////
-	//request by mal byt naplneny uz sam
+	//request by mal byt naplneny uz sam pekne ako treba
 	/////////////////////////////////////
-	/*request, err := fillRequestStruck(in.Request().URL)
-	if err != nil {
-		return c.NoContent(http.StatusBadRequest)
-	}*/
 
 	data := make(chan int32, 1)
 	errChan := make(chan error, 1)
@@ -48,7 +44,7 @@ func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*mode
 
 
 //Vyries nacitanie z JSON
-func (s *Service) HandlePost(ctx context.Context) (*empty.Empty, error){
+func (s *Service) CreateEvent(ctx context.Context, insert *models.Event) (*empty.Empty, error){
 	return &empty.Empty{}, nil
 }
 /*
