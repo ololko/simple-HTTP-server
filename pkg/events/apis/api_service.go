@@ -25,7 +25,7 @@ func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*mode
 
 	go s.DataAccessor.ReadEvent(*request, data, errChan)
 	if <-errChan != nil {
-		return nil, status.Errorf(http.StatusNotFound, "Not found")
+		return nil, status.Error(http.StatusNotFound, "Not found")
 	}
 
 	log.WithFields(log.Fields{
@@ -38,8 +38,12 @@ func (s *Service) ReadEvent(ctx context.Context, request *models.Request) (*mode
 	}, nil
 }
 
-//Vyries nacitanie z JSON
 func (s *Service) CreateEvent(ctx context.Context, insert *models.Event) (*empty.Empty, error) {
+	errChan := make(chan error, 1)
+	go s.DataAccessor.WriteEvent(*insert,errChan)
+	if <-errChan != nil {
+		return &empty.Empty{}, status.Error(http.StatusInternalServerError, "Could not write event into database")
+	}
 	return &empty.Empty{}, nil
 }
 

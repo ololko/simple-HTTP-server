@@ -16,7 +16,6 @@ import (
 	"os"
 
 	firebase "firebase.google.com/go"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -39,7 +38,7 @@ func main() {
 	}
 
 	//psql database connection
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", viper.GetString("host"), viper.GetInt("dbPort"), viper.GetString("user"), viper.GetString("dbname"))
+	/*psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", viper.GetString("host"), viper.GetInt("dbPort"), viper.GetString("user"), viper.GetString("dbname"))
 	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -50,8 +49,8 @@ func main() {
 		panic(err)
 	}
 
-	//db.DropTableIfExists(&gw.EventT{})
-	db.AutoMigrate(&gw.DatabaseElement{})
+	//db.DropTableIfExists(&gw.DatabaseElement{})
+	db.AutoMigrate(&gw.DatabaseElement{})*/
 
 	//firestore database connection
 	opt := option.WithCredentialsFile(viper.GetString("firestoreAccountKey"))
@@ -84,7 +83,7 @@ func main() {
 	go func() {
 		err = HttpServer.RunServerHTTP(ctx, viper.GetString("grpcPort"), viper.GetString("serverPort"))
 		if err != nil {
-			fmt.Println("Failed to start HTTP server: %v", err)
+			fmt.Println("Failed to start HTTP server: ", err)
 		}
 	}()
 

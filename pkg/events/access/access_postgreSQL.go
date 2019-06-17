@@ -49,9 +49,14 @@ func (d *PostgreAccess) ReadEvent(request models.Request, answer chan<- int32, c
 //TIEZ UPRAV
 
 func (d *PostgreAccess) WriteEvent(insert models.Event, chanErr chan<- error) {
-	panic("implement me")
-	/*d.Client.NewRecord(insert)
-	d.Client.Create(&insert)
+	newEvent := models.DatabaseElement{
+		Type:insert.Type,
+		Count:insert.Count,
+		Timestamp:insert.Timestamp,
+	}
+
+	d.Client.NewRecord(newEvent)
+	d.Client.Create(&newEvent)
 	chanErr <- nil
-	return*/
+	return
 }

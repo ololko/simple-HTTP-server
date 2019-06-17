@@ -1,20 +1,15 @@
 package apis
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
-	"fmt"
-	"github.com/jinzhu/gorm"
-	"github.com/labstack/echo"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/ololko/simple-HTTP-server/pkg/events/access"
 	"github.com/ololko/simple-HTTP-server/pkg/events/models"
-	myViper "github.com/ololko/simple-HTTP-server/pkg/viper"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/status"
+	"math"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -23,6 +18,22 @@ type ApiSuite struct {
 	service *Service
 	//client  *firestore.Client
 	client *sql.DB
+}
+
+type errorFromGRPC struct {
+	code int
+}
+
+type requestInvalidTo struct {
+	Type string
+	From int
+	To   string
+}
+
+type requestInvalidFrom struct {
+	Type string
+	From string
+	To   int
 }
 
 type eventInvalidTimestamp struct {
@@ -38,7 +49,7 @@ type eventInvalidType struct {
 }
 
 func (s *ApiSuite) SetupSuite() {
-	err := myViper.ReadConfig("viperConfig", "../../../configs/")
+	/*err := myViper.ReadConfig("viperConfig", "../../../configs/")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -52,13 +63,14 @@ func (s *ApiSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	//db.DropTableIfExists(&models.EventT{})
-	db.AutoMigrate(&models.EventT{})
-	datAcc := &access.PostgreAccess{Client: db}
-	s.service = NewService(datAcc)
+	//db.DropTableIfExists(&models.DatabaseElement{})
+	db.AutoMigrate(&models.DatabaseElement{})*/
+
+	/*	datAcc := &access.PostgreAccess{Client: db}
+		s.service = NewService(datAcc)*/
 
 	//mockDB
-	//s.service = NewService(&access.MockAccess{})
+	s.service = NewService(&access.MockAccess{})
 
 	//firestoreDb
 	/*opt := option.WithCredentialsFile(path)
@@ -80,7 +92,7 @@ func (s *ApiSuite) SetupSuite() {
 func (s *ApiSuite) SetupTest() {
 	// add new data to database
 	s.service.DataAccessor = &access.MockAccess{
-		Events: map[string][]models.EventT{
+		Events: map[string][]models.DatabaseElement{
 			"Skuska": {
 				{
 					Count:     2,
@@ -109,107 +121,101 @@ func (s *ApiSuite) SetupTest() {
 
 func (s *ApiSuite) TestGet() {
 	candidates := []struct {
-		url          string
-		expected     models.AnswerT
-		expectedCode int
+		request       *models.Request
+		expectedBody  *models.Answer
+		expectedError error
 	}{
 		{
-			url: "/events?type=Skuska&from=3&to=7",
-			expected: models.AnswerT{
+			request: &models.Request{
+				Type: "Skuska",
+				From: 3,
+				To:   7,
+			},
+			expectedBody: &models.Answer{
 				Type:  "Skuska",
 				Count: 12,
 			},
-			expectedCode: http.StatusOK,
 		},
 		{
-			url: "/events?type=Skuska&from=10",
-			expected: models.AnswerT{
+			request: &models.Request{
+				Type: "Skuska",
+				From: 10,
+				To:   math.MaxInt32,
+			},
+			expectedBody: &models.Answer{
 				Type:  "Skuska",
 				Count: 1,
 			},
-			expectedCode: http.StatusOK,
 		},
 		{
-			url: "/events?type=Skuska&to=7&from=3",
-			expected: models.AnswerT{
-				Type:  "Skuska",
-				Count: 12,
+			request: &models.Request{
+				Type: "Skuska",
+				From: 3,
+				To:   -9,
 			},
-			expectedCode: http.StatusOK,
+			expectedError: status.Error(http.StatusNotFound, "Not found"),
 		},
 		{
-			url:          "/events?type=Skuska&from=3&to=75fdg",
-			expectedCode: http.StatusBadRequest,
+			request: &models.Request{
+				From: math.MinInt32,
+				To:   math.MaxInt32,
+				Type: "NoData",
+			},
+			expectedError: status.Error(http.StatusNotFound, "Not found"),
 		},
 		{
-			url:          "/events?type=Skuska&from=t&to=",
-			expectedCode: http.StatusBadRequest,
+			request: &models.Request{
+				Type: "NoData",
+			},
+			expectedError: status.Error(http.StatusNotFound, "Not found"),
 		},
 		{
-			url:          "/events?type=NoData&from=3",
-			expectedCode: http.StatusNotFound,
-		},
-		{
-			url:          "/events?type=NoData",
-			expectedCode: http.StatusNotFound,
-		},
-		{
-			url:          "/events?type=Skuska&from=7&to=3",
-			expectedCode: http.StatusNotFound,
+			request: &models.Request{
+				Type: "Skuska",
+				From: -60,
+				To:   -12,
+			},
+			expectedError: status.Error(http.StatusNotFound, "Not found"),
 		},
 	}
 
-	e := echo.New()
-
 	for _, candidate := range candidates {
-		req := httptest.NewRequest(http.MethodGet, candidate.url, nil)
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-		h := s.service.HandleGet
+		resp, err := s.service.ReadEvent(context.Background(), candidate.request)
 
-		s.NoError(h(ctx))
-		var received models.AnswerT
-		if rec.Code == 200 {
-			s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
-		}
-
-		assert.Equal(s.T(), candidate.expectedCode, rec.Code)
-		assert.Equal(s.T(), candidate.expected, received)
+		s.Equal(candidate.expectedBody, resp)
+		s.Equal(candidate.expectedError, err)
 	}
 }
 
 func (s *ApiSuite) TestPost() {
 	candidates := []struct {
-		newEvent     interface{}
-		response     string
-		expectedCode int
+		newEvent      *models.Event
+		expectedBody  interface{}
+		expectedError error
 	}{
 		{
-			newEvent: models.EventT{
+			newEvent: &models.Event{
 				Type:      "Skuska",
 				Timestamp: 100,
 				Count:     3,
 			},
-			response:     "Skuska",
-			expectedCode: http.StatusCreated,
+			expectedBody: &empty.Empty{},
 		},
 		{
-			newEvent: models.EventT{
+			newEvent: &models.Event{
 				Type:      "BryndzoveHalusky",
 				Timestamp: 5,
 				Count:     36,
 			},
-			response:     "BryndzoveHalusky",
-			expectedCode: http.StatusCreated,
+			expectedBody: &empty.Empty{},
 		},
-		{
-			newEvent: eventInvalidTimestamp{
+		/*{
+			newEvent: &eventInvalidTimestamp{
 				Type:      "Skuska",
 				Timestamp: "100",
 				Count:     3,
 			},
-			response:     "",
-			expectedCode: http.StatusBadRequest,
+			expectedBody: &empty.Empty{},
 		},
 		{
 			newEvent: eventInvalidTimestamp{
@@ -217,7 +223,7 @@ func (s *ApiSuite) TestPost() {
 				Timestamp: "10sd5s",
 				Count:     36,
 			},
-			response:     "",
+			expectedBody:     "",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
@@ -226,7 +232,7 @@ func (s *ApiSuite) TestPost() {
 				Timestamp: "96sd",
 				Count:     36,
 			},
-			response:     "",
+			expectedBody:     "",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
@@ -235,7 +241,7 @@ func (s *ApiSuite) TestPost() {
 				Timestamp: 100,
 				Count:     3,
 			},
-			response:     "",
+			expectedBody:     "",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
@@ -244,29 +250,16 @@ func (s *ApiSuite) TestPost() {
 				Timestamp: 10,
 				Count:     36,
 			},
-			response:     "",
+			expectedBody:     "",
 			expectedCode: http.StatusBadRequest,
-		},
+		},*/
 	}
 
-	e := echo.New()
-	h := s.service.HandlePost
+	for _, candidate := range candidates {
+		resp, err := s.service.CreateEvent(context.Background(), candidate.newEvent)
 
-	for _, c := range candidates {
-		bb, _ := json.Marshal(c.newEvent)
-		req := httptest.NewRequest(http.MethodPost, "/events", bytes.NewBuffer(bb))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-
-		rec := httptest.NewRecorder()
-		ctx := e.NewContext(req, rec)
-
-		s.NoError(h(ctx))
-		var received string
-		if rec.Code == 201 {
-			s.NoError(json.Unmarshal(rec.Body.Bytes(), &received))
-		}
-		assert.Equal(s.T(), c.expectedCode, rec.Code)
-		assert.Equal(s.T(), c.response, received)
+		s.Equal(candidate.expectedBody, resp)
+		s.Equal(candidate.expectedError, err)
 	}
 }
 

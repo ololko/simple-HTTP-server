@@ -18,7 +18,8 @@ func RunServerHTTP(ctx context.Context, grpcPort, httpPort string) error {
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	if err := gw.RegisterEventsHandlerFromEndpoint(ctx, mux, "localhost:"+grpcPort, opts); err != nil {
+	err := gw.RegisterEventsHandlerFromEndpoint(ctx, mux, "localhost:"+grpcPort, opts)
+	if err != nil {
 		return err
 	}
 
@@ -32,7 +33,7 @@ func RunServerHTTP(ctx context.Context, grpcPort, httpPort string) error {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			// sig is a ^C, handle it
+			log.Println("shutting down HTTP server...")
 		}
 
 		_, cancel := context.WithTimeout(ctx, 5*time.Second)

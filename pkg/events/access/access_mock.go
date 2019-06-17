@@ -46,10 +46,14 @@ func (d *MockAccess) ReadEvent(request models.Request, answer chan<- int32, errC
 	}
 }
 
-func (d *MockAccess) WriteEvent(newEvent models.Event, errChan chan<- error) {
-	panic("implement me")
-	/*d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
+func (d *MockAccess) WriteEvent(inserting models.Event, errChan chan<- error) {
+	newEvent := models.DatabaseElement{
+		Type: inserting.Type,
+		Count:inserting.Count,
+		Timestamp:inserting.Timestamp,
+	}
+	d.Events[newEvent.Type] = append(d.Events[newEvent.Type], newEvent)
 
 	errChan <- nil
-	return*/
+	return
 }
