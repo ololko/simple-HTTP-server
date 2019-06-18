@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  tests:
+    build: "."
+    volumes:
+      - "/home/luppolo/go/src/github.com/ololko/simple-HTTP-server:/app"
