@@ -1,0 +1,22 @@
+apiVersion: skaffold/v1beta12
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/oliverbox/server
+    context: build/server
+    sync:
+      manual:
+      - src: '**/*.go'
+        dest: '/app'
+  - image: gcr.io/oliverbox/database
+    context: build/database
+deploy:
+  kubectl:
+    manifests:
+      - build/server/k8s-*
+      - build/database/k8s-*
+#portForward:
+#  - resourceType: Deployment
+#    resourceName: server
+#    port: 50000
+#    localPort: 50000

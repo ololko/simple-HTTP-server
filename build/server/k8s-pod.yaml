@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: server
+spec:
+  containers:
+  - name: server
+    image: gcr.io/oliverbox/server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 50000
